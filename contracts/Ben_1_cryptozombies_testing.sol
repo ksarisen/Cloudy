@@ -15,17 +15,36 @@ contract ShardManager {
       string shardData;
     }
 
+    struct Farmer {
+      address walletAddress;
+      uint nodeId;
+      uint storageSize;
+      string storageType;
+    }
+
     Shard[] private shards;
     string[] private filehashes;
-    string[] private AvailableFarmerIds;
+    Farmer[] private availableFarmers;
 
     //fileHashToOwner tracks files and who owns them
-    memory mapping (string => address) private fileHashToOwner;
+    mapping (string => address) private fileHashToOwner;
     mapping (uint => string) private ShardIdtoFileHash;
     mapping (uint => string) private ShardIdtoFarmerId;
 
-    //the following function is NOT complete. Ben will improve it
-    function _storeFile(string memory _filename, address owner,uint _dna) private {
-        FilesToShards.push(_filename);
+    function addStorageProvider(address _address, uint _nodeID, uint _storageSize, string memory _storageType) external {
+      availableFarmers.push(Farmer(_address, _nodeID, _storageSize, _storageType));
     }
+
+    function getStorageProviderNodeID(address _address) external returns (uint) {
+      for (uint i=0; i<availableFarmers.length; i++) {
+        if (availableFarmers[i].walletAddress == _address) {
+          return availableFarmers[i].nodeId;
+        }
+      }
+
+      revert('Not found');
+    }
+
+
+
 }
