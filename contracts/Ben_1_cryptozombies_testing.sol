@@ -17,14 +17,25 @@ contract ShardManager is Ownable {
       string shardData;
     }
 
+    struct Farmer {
+      address walletAddress;
+      uint nodeId;
+      uint storageSize;
+      string storageType;
+    }
+
+    Farmer[] private availableFarmers;
+    //string[] private availableFarmerIds;
+
     Shard[] private shards;
-    string[] private fileHashes;
-    string[] private availableFarmerIds;
+    string[] private filehashes;
 
     //fileHashToOwner tracks files and who owns them
     mapping (string => address) private fileHashToOwner;
-    mapping (uint => string) private shardIdtoFileHash;
-    mapping (uint => string) private shardIdtoFarmerId;
+    mapping (uint => string) private ShardIdtoFileHash;
+    mapping (uint => string) private ShardIdtoFarmerId;
+
+
 
     mapping(string => uint) private fileHashToArrayIndexes;
 
@@ -170,5 +181,23 @@ contract ShardManager is Ownable {
         }
 
     }
+
+}
+
+    function addStorageProvider(address _address, uint _nodeID, uint _storageSize, string memory _storageType) external {
+      availableFarmers.push(Farmer(_address, _nodeID, _storageSize, _storageType));
+    }
+
+    function getStorageProviderNodeID(address _address) external returns (uint) {
+      for (uint i=0; i<availableFarmers.length; i++) {
+        if (availableFarmers[i].walletAddress == _address) {
+          return availableFarmers[i].nodeId;
+        }
+      }
+
+      revert('Not found');
+    }
+
+
 
 }
