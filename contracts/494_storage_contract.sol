@@ -88,41 +88,41 @@ contract ShardManager is Ownable {
     mapping (address => uint) private userFileCount;
 
     // Storage Provider will provide(upload) their node ID(not sure if we need id, just address might be sufficent) and list of stored shards. 
-    function getDetailsByFarmer(address _farmer) external view returns(uint memory, Shard[]) {
-      uint result1 = (FarmerToNodeId[_farmer]);
+    function getDetailsByFarmer(Farmer _farmer) external view returns(uint memory, Shard[]) {
+      uint nodeId = _farmer.nodeId;
 
-      Shard[] memory result2 = new Shard[](farmerShardCount[result1]);
+      Shard[] memory shardList = new Shard[](farmerShardCount[result1]);
       uint counter;
       for (uint i = 0; i < shards.length; i++) {
         if ((shardIdtoFarmerId[Shards[i].shardId]) == _farmer) {
-          result2[counter] = Shards[i];
+          shardList[counter] = Shards[i];
           counter++;
         }
       }
-      return (result1, result2);
+      return (nodeId, shardList);
     }
 
     // Owner will provide the filename(fileHash?), and list of shard hashes (shardIds)?
     function getDetailsByUser(address _user) external view returns(string[], Shard[]) {
-      string[] result1 = new string[](userFileCount[_user]);
+      string[] hashes = new string[](userFileCount[_user]);
       uint counterOne;
 
       for (uint i = 0; i < fileHashes.length; i++) {
-        if ((fileHashToOwner[FileHashes[i]) == _user) {
-          result1[counter] = FileHashes[i];
+        if (fileHashToOwner[FileHashes[i]] == _user) {
+          hashes[counter] = FileHashes[i];
           counterOne++;
         }
       }
 
-      Shard[] memory result2 = new Shard[](farmerShardCount[result1]);
+      Shard[] memory shardList = new Shard[](farmerShardCount[hashes]);
       uint counterTwo;
       for (uint i = 0; i < shards.length; i++) {
         if (fileHashToOwner[(shardIdtoFileHash[Shards[i].shardId])] == _user) {
-          result2[counter] = Shards[i];
+          shardList[counter] = Shards[i];
           counterTwo++;
         }
       }
-      return (result1, result2);
+      return (hashes, shardList);
     }
 
     //start of jennifer's code:
