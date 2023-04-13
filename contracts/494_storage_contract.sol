@@ -82,7 +82,7 @@ contract ShardManager is Ownable {
     // Kerem's code below
     // Implemented according to the google doc (Contract functions TODOS for March 24th)
 
-    mapping (address => uint) private farmerToNodeId;
+    //mapping (address => uint) private farmerToNodeId;
     mapping (uint => uint) private farmerShardCount;
 
     mapping (address => uint) private userFileCount;
