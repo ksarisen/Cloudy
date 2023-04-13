@@ -11,8 +11,12 @@ import ".deps/ownable.sol";
  */
 contract ShardManager is Ownable {
 
+    // struct FileData {
+    //   string filehash
+    // }
+    
     struct Shard {
-      uint filehashId;
+      //bytes20 filehash; // if you need the filehash check ShardIdtoFileHash
       uint shardId;
       string shardData;
     }
@@ -27,38 +31,50 @@ contract ShardManager is Ownable {
     Farmer[] private availableFarmers;
     //string[] private availableFarmerIds;
 
-    Shard[] private Shards;
-    string[] private FileHashes;
+    Shard[] private shards;
+    bytes20[] private filehashes;
 
     //fileHashToOwner tracks files and who owns them
-    mapping (string => address) private fileHashToOwner;
-    mapping (uint => string) private ShardIdtoFileHash;
-    mapping (uint => uint) private ShardIdtoFarmerId;
+    mapping (bytes20 => address) private fileHashToOwner;
+    mapping (uint => bytes20) private ShardIdtoFileHash;
+    mapping (uint => string) private ShardIdtoFarmerId;
 
 
 
-    mapping(string => uint) private fileHashToArrayIndexes;
+    mapping(bytes20 => uint) private fileHashToArrayIndexes;
 
-    event NewFile(uint index, string _filehash);
-    event DeleteFile(string _filehash);
+    event NewFile(uint index, bytes20 _filehash);
+    event DeleteFile(bytes20 _filehash);
     event deleteShardFromFarmer(uint shardId, uint farmerId);
 
-    mapping(string => uint) private FileHashToArrayIndexes;
+    event NewFile(uint index, bytes20 _filehash);
+    event DeleteFile(bytes20 _filehash);
 
-    //the following function is NOT complete. Ben will improve it
-    function _storeFile(string memory _filehash) public onlyOwner{
+    function _storeFile(bytes20 memory _filehash) public {
       //[Activate File] Owner can Upload filename and store in a map, along with tracking identity/wallet
       //require(/*baseline payment check*/);
+
+      //assert that the hash is a 40 character ripeMD-160 hash
+      if(strBytes.length <= 40)
+          revert;
+
       FileHashes.push(_filehash);
       uint index = FileHashes.length - 1;
       fileHashToOwner[_filehash] = msg.sender;
-      FileHashToArrayIndexes[_filehash] = index;
-      emit NewFile(index, _filehash); // assume shard manager will pick this up and shard the file.
+
+      fileHashToArrayIndexes[_filehash] = index; //not sure if we need this.
+
+      //Think of filehash as the id of the file.
+      //E.g. first time use will store filehash A at index 0 of FileHashes, keep track of that index in fileHashToArrayIndexes, and keep track of the owner in fileHashToOwner
+      emit NewFile(_filehash); // assume frontend js will pick this up and shard the file from FileHashes[index].
+
+      //expect shard manager to track 
 
       //the hash is the ripemd160 of a sha256 digest
     }
-    function _deleteFileHash(string memory _filehash, address _owner) public onlyOwner {
-      //require(/*baseline identity check*/);
+    function _deleteFileHash(bytes20 memory _filehash, address _owner) public {
+      require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!");
+
       uint index = fileHashToArrayIndexes[_filehash];
 
       //remove filehash from FileHashes Array
@@ -101,13 +117,14 @@ contract ShardManager is Ownable {
     }
 
     // Owner will provide the filename(fileHash?), and list of shard hashes (shardIds)?
-    function getDetailsByUser(address _user) external view returns(string[] memory, Shard[] memory) {
-      string[] memory  result1 = new string[](userFileCount[_user]);
+    function getDetailsByUser() external view returns(string[] memory, Shard[] memory) {
+      //ben's note: I updated this to only allow data from msg.sender to be returned so they cant just read other user's data.
+      string[] memory result1 = new string[](userFileCount[msg.sender]);
       uint counterOne;
 
-      for (uint i = 0; i < FileHashes.length; i++) {
+      for (uint i = 0; i < fileHashes.length; i++) {
         if ((fileHashToOwner[FileHashes[i]]) == _user) {
-          result1[counterOne] = FileHashes[i];
+          result1[counter] = FileHashes[i];
           counterOne++;
         }
       }
@@ -125,13 +142,17 @@ contract ShardManager is Ownable {
 
     //start of jennifer's code:
     mapping (address => uint) private ownerFilehashCount;
-    mapping (string => uint) private shardsInFilehashCount;
+    mapping (uint => bytes20) private ShardIdtoFileHash;
+    mapping (address => uint) private shardsInFilehashCount;
+    mapping (uint => string) private ShardIdtoFarmerId;
 
     // [Provide all my Filehashes] return all filehashes owned by user
-    function getFilehashesByOwner(address _owner) public view returns(string[] memory) {
+    function getFilehashesByOwner() public view returns(uint[] memory) {
+    //Jennifer TODO: lets just add each new file's hash to ownerFilehashes in the Storefile Method, to save gas.
+
     // _owner from contract ownable
     // we are creating a new array with the size based on the no. of filehashes the owner has
-      string[] memory ownerFilehashes = new string[](ownerFilehashCount[_owner]); 
+      uint[] memory ownerFilehashes = new bytes20[](ownerFilehashCount[msg.sender]); 
         uint counter = 0;
         // we go through all the filehashes
         for (uint i = 0; i < FileHashes.length; i++) {
@@ -145,14 +166,16 @@ contract ShardManager is Ownable {
       return ownerFilehashes;
     }
 
-    // [Drop Deleted Shards] Storage Provider is told to stop storing deleted data 
-    function _getShardsByFilehash (string memory _filehash, uint _fileHashId) private view returns(uint[] memory) {
-      uint[] memory filehashShards; //todo make it constant of size shardsInFilehashCount[_filehash]
+    
+    function _getShardsByFilehash (bytes20 _filehash) public view returns(uint[] memory) {
+      require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can access its shards.");
+
+      uint[] memory filehashShards = new uint[](shardsInFilehashCount[_filehash]); 
         uint counter = 0;
         // we go through all the filehashes
         for (uint i = 0; i < Shards.length; i++) {
           // if the filehash's owner is equal to the owner
-          if (Shards[i].filehashId == _fileHashId) {
+          if (Shards[i].filehash == _filehash) {
             // we add it to the ownerFilehashes array
             filehashShards[counter] = Shards[i].shardId; 
             counter++;
@@ -161,23 +184,32 @@ contract ShardManager is Ownable {
       return filehashShards;
     }
 
-    function dropDeletedShards (string memory _filehash, uint _filehashId) public {
+    // [Drop Deleted Shards] Storage Provider is told to stop storing deleted data 
+    //After a user deletes a file, drop its shards
+    //emits the farmerId and shardId
+    function dropShardsOfDeletedFile (bytes20 _filehash) private {
+      require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!"); //either make this function public (if we expect it to be called outside the contract) or remove this security check
       // find shards by filehashId
-      uint[] memory filehashShards = _getShardsByFilehash(_filehash,_filehashId);
+      uint[] memory filehashShards = _getShardsByFilehash(_filehash);
       // go through all the filehash's shards
       for (uint i = 0; i < filehashShards.length; i++) {
         // check which farmer has the shard
-         for (uint j = 0; j < availableFarmers.length; j++) {
-           if (ShardIdtoFarmerId[i] == availableFarmers[j].nodeId) {
-              // notify farmer to drop
-              emit deleteShardFromFarmer(filehashShards[i],ShardIdtoFarmerId[i]);
-           }
-         }
+
+        ///TODO: decide why we need to iterate through available farmers when we already have the id tof the farmer holding the shard. can't we delete the following lines?
+        //  for (uint j = 0; j < AvailableFarmerIds.length; j++) {
+        //    if (ShardIdtoFarmerId[i] == AvailableFarmerIds[j]) {
+              
+              /// expect the caller to listen for a series of deleteShard events
+              emit deleteShard(ShardIdtoFarmerId[filehashShards[i]], filehashShards[i]);
+
+        //    }
+        //  }
         }
 
     }
 
     function addStorageProvider(address _address, uint _nodeID, uint _storageSize, string memory _storageType) external {
+      // should we use msg.sender instead?
       availableFarmers.push(Farmer(_address, _nodeID, _storageSize, _storageType));
     }
 
