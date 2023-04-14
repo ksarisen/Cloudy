@@ -243,29 +243,29 @@ contract ShardManager is Ownable {
         return ownerFilehashes;
     }
 
-    function getShardsByFilehash(
-        bytes20 _filehash
-    ) public view returns (uint[] memory) {
-        require(
-            msg.sender == fileHashToOwner[_filehash],
-            "Only the File Owner can access its shards."
-        );
+    // function getShardsByFilehash(
+    //     bytes20 _filehash
+    // ) public view returns (uint[] memory) {
+    //     require(
+    //         msg.sender == fileHashToOwner[_filehash],
+    //         "Only the File Owner can access its shards."
+    //     );
 
-        uint[] memory filehashShards = new uint[](
-            shardsInFile_Count[_filehash]
-        );
-        uint counter = 0;
-        // we go through all the filehashes
-        for (uint i = 0; i < shards.length; i++) {
-            // if the filehash's owner is equal to the owner
-            if (shardIdtoFileHash[shards[i].shardId] == _filehash) {
-                // we add it to the ownerFilehashes array
-                filehashShards[counter] = shards[i].shardId;
-                counter++;
-            }
-        }
-        return filehashShards;
-    }
+    //     uint[] memory filehashShards = new uint[](
+    //         shardsInFile_Count[_filehash]
+    //     );
+    //     uint counter = 0;
+    //     // we go through all the filehashes
+    //     for (uint i = 0; i < shards.length; i++) {
+    //         // if the filehash's owner is equal to the owner
+    //         if (shardIdtoFileHash[shards[i].shardId] == _filehash) {
+    //             // we add it to the ownerFilehashes array
+    //             filehashShards[counter] = shards[i].shardId;
+    //             counter++;
+    //         }
+    //     }
+    //     return filehashShards;
+    // }
 
     // [Drop Deleted Shards] Storage Provider is told to stop storing deleted data
     //After a user deletes a file, drop its shards
