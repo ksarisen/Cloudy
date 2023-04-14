@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity >=0.8.2 <0.9.0;
 
 contract StorageProvider {
@@ -18,11 +17,11 @@ contract StorageProvider {
     event PaymentSent(address indexed farmer, uint256 amount); // Event to emit when payment is sent to a farmer
 
     constructor(uint256 _auditInterval, uint256 _auditPayment) {
-        auditInterval = _auditInterval;
-        auditPayment = _auditPayment;
+        auditInterval = _auditInterval;//audit interval in seconds
+        auditPayment = _auditPayment; //payout = 0
     }
 
-    // Function to store a file
+    // Function to store a shard from a farmer.
     function storeShard(bytes memory data) public {
         storageData[nextShardId] = data; // Store the file data in the mapping with the next available file ID
         shardAssignments[nextShardId] = msg.sender; // Assign the storage provider as the farmer for the file
@@ -30,7 +29,7 @@ contract StorageProvider {
         nextShardId++; // Increment the file ID counter
     }
 
-    // Function to retrieve a file
+    // Function to retrieve a shardId
     function retrieveShard(uint256 shardId) public view returns (bytes memory) {
         require(shardId < nextShardId, "File does not exist"); // Check if the file ID is valid
         return storageData[shardId]; // Retrieve the file data from the mapping using the file ID
@@ -57,7 +56,7 @@ contract StorageProvider {
     Note that you can never regain more gas than what your current transaction is using.
     */
 
-    // Function to audit a file
+    // Function to audit a file, returns boolean of whether farmer gets a shard. if he does, he gets paid.
     function auditShard(uint256 shardId) public returns (bool) {
         require(shardId < nextShardId, "File does not exist"); // Check if the file ID is valid
 
@@ -78,7 +77,6 @@ contract StorageProvider {
             emit AuditConfirmed(shardId, assignedFarmer, block.timestamp); // Emit an event for the audit confirmation
             sendPayment(assignedFarmer); // Call an external function to send payment to the assigned farmer
         }
-
         return success; // Return the result of the file audit
     }
 
