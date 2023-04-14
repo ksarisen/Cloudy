@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
+
 pragma solidity >=0.8.2 <0.9.0;
 
-contract StorageProvider {
+import "contracts/494_storage_contract.sol";
+
+contract StorageProvider is ShardManager {
     mapping(uint256 => bytes) private storageData; // Mapping to store the data with keys as file IDs
     mapping(uint256 => address) private shardAssignments; // Mapping to store the assigned farmer for each file
     mapping(uint256 => uint256) private lastAuditTimestamps; // Mapping to store the last audit timestamp for each file
