@@ -144,7 +144,7 @@ contract ShardManager is Ownable {
     // Function to retrieve shard IDs by file hash
     function getShardIDs(
         bytes20 fileHash
-    ) external view returns (uint[] memory) {
+    ) internal view returns (uint[] memory) {
         return fileHashToShards[fileHash];
     }
 
@@ -276,7 +276,7 @@ contract ShardManager is Ownable {
             "Only File Owner can delete the file!"
         ); //either make this function public (if we expect it to be called outside the contract) or remove this security check
         // find shards by filehashId
-        uint[] memory filehashShards = getShardsByFilehash(_filehash);
+        uint[] memory filehashShards = getShardIDs(_filehash);
         // go through all the filehash's shards
         for (uint i = 0; i < filehashShards.length; i++) {
             // check which farmer has the shard
