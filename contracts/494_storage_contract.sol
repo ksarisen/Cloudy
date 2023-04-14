@@ -3,7 +3,6 @@
 pragma solidity >=0.8.2 <0.9.0;
 
 import ".deps/ownable.sol";
-import "contracts/StorageProviderContract.sol";
 
 /**
  * @title ShardManager
@@ -70,7 +69,13 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function _deleteFileHash(bytes20 _filehash) public {
+    function _deleteFileHash(bytes20 memory _filehash, address _owner) public {
+        // Checks if the filehash exists
+        require(
+            //fileHashToArrayIndexes[_filehash] == 0, //this doesn't work as a "does the file exist" check because the first valid index 0 matches the unset default of 0.
+            checkFilehash(_filehash) == 0,
+            "The file does not exist."
+        );
       require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!");
 
       uint index = fileHashToArrayIndexes[_filehash];
@@ -80,18 +85,81 @@ contract ShardManager is Ownable {
       fileHashes.pop();
       //Delete mapping References
       delete fileHashToArrayIndexes[_filehash];
+      delete fileHashToShards[_fileHash];
+      delete shardsinFile_Count[_filehash];
 
-      emit DeleteFile(_filehash); // assume shard manager will pick this up and tell farmers to drop the relevant shards.
+      emit DeleteFile(_filehash); // Web application will pick this up and tell farmers to drop the relevant shards.
     }
-    function remove(uint index) internal {
-    
+
+    function checkFilehash(bytes20 memory _filehash) internal view returns(uint memory) {
+        // we go through all the filehashes
+        for (uint i = 0; i < filehashes.length; i++) {
+            // if the filehash's owner is equal to the owner
+            if (filehash[i] == _filehash) {
+                return 1; //filehash found
+            }
+        }
+        return 0; // filehash doesn't exist
     }
-    // function getFarmerIdsStoringFile(address _owner) external view returns(string[] memory) {
-    // // Start here
+
+    //given a filehash, return the list of farmers the website would need to contact to get all shard.
+    // function getFarmerIdsStoringFile(bytes20 memory _filehash) internal returns(uint[] memory) {
+        //return array of nodeIds
     // }
+    
     //End of Ben's code
 
     // Kerem's code below
+
+    mapping(string => uint[]) fileHashToShards;
+    uint public shardsInFilecount;
+
+    // Mapping to store file hash owner's address
+    mapping(string => address) fileHashOwners;
+
+    // Modifier to restrict access to the file owner or an address with consent
+    modifier onlyFileOwnerOrConsent(string memory fileHash){
+        require(
+            msg.sender == fileHashOwners[fileHash] || hasConsent(fileHash, msg.sender),
+            "Caller is not the file owner or does not have consent"
+        );
+    }
+
+    //function for user to notify blockchain which shards relate to their file.
+    function associateShardsWithFileHash(string memory _fileHash, uint[] memory shardIDs)
+        external
+        onlyFileOwnerOrConsent(_fileHash)
+    {
+        require(shardIDs.length > 0, "Shard IDs must not be empty");
+
+        // Store shardIDs in the mapping under the fileHash
+        fileHashToShards[_fileHash] = shardIDs; //file to shards implies i pass in a file to get shards
+
+        // Increment the shardsInFile_count
+        shardsinFile_Count[_filehash] += shardIDs.length;
+    }
+
+    // Function to retrieve shard IDs by file hash
+    function getShardIDs(string memory fileHash) external view returns (uint[] memory) {
+        return  fileHashToShards[fileHash];
+    }
+
+    // Function to get the total count of shards in a file
+    function getShardsInFileCount() external view returns (uint) {
+        return shardsInFile_count;
+    }
+
+    // Function to replace file hash owner's address
+    function setFileHashOwner(string memory fileHash, address owner) external {
+        require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can give away ownership of their file");
+        fileHashOwner[fileHash] = owner;
+    }
+
+    // Function to check if an address has consent from the file owner
+    function hasConsent(string memory fileHash, address caller) internal view returns (bool) {
+        return fileHashOwners[fileHash] == caller;
+    }
+
     // Implemented according to the google doc (Contract functions TODOS for March 24th)
 
     //mapping (address => uint) private farmerToNodeId;
@@ -99,20 +167,20 @@ contract ShardManager is Ownable {
 
     mapping (address => uint) private ownerFileCount;
 
-    // Storage Provider will provide(upload) their node ID(not sure if we need id, just address might be sufficent) and list of stored shards. 
-    function getDetailsByFarmer(Farmer memory _farmer) external view returns(uint, Shard[] memory) {
-      uint nodeId = _farmer.nodeId;
+    // // Storage Provider will provide(upload) their node ID(not sure if we need id, just address might be sufficent) and list of stored shards. 
+    // function getDetailsByFarmer(Farmer memory _farmer) external view returns(uint, Shard[] memory) {
+    //   uint nodeId = _farmer.nodeId;
 
-      Shard[] memory shardList  = new Shard[](farmerShardCount[nodeId]);
-      uint counter;
-      for (uint i = 0; i < shards.length; i++) {
-        if ((shardIdtoFarmerNodeId[shards[i].shardId]) == _farmer.nodeId) {
-          shardList[counter] = shards[i];
-          counter++;
-        }
-      }
-      return (nodeId, shardList);
-    }
+    //   Shard[] memory shardList  = new Shard[](farmerShardCount[nodeId]);
+    //   uint counter;
+    //   for (uint i = 0; i < shards.length; i++) {
+    //     if ((shardIdtoFarmerNodeId[shards[i].shardId]) == _farmer.nodeId) {
+    //       shardList[counter] = shards[i];
+    //       counter++;
+    //     }
+    //   }
+    //   return (nodeId, shardList);
+    // }
 
     // // Returns the list of file hashes, and shard ids.
     // function getDetailsByUser() external view returns(string[] memory, Shard[] memory) {

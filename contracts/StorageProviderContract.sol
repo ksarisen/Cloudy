@@ -24,7 +24,7 @@ contract StorageProvider is ShardManager {
         auditPayment = _auditPayment; //payout = 0
     }
 
-    // Function to store a shard from a farmer.
+    // Function to notify blockchain when a farmer is storing a new shard.
     function storeShard(bytes memory data) public {
         storageData[nextShardId] = data; // Store the file data in the mapping with the next available file ID
         shardAssignments[nextShardId] = msg.sender; // Assign the storage provider as the farmer for the file
