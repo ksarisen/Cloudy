@@ -69,33 +69,33 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function _deleteFileHash(bytes20 memory _filehash) public {
-        // Checks if the filehash exists
+    function _deleteFileHash(bytes20 _fileHash) public {
+        // Checks if the fileHash exists
         require(
-            //fileHashToArrayIndexes[_filehash] == 0, //this doesn't work as a "does the file exist" check because the first valid index 0 matches the unset default of 0.
-            checkFilehash(_filehash) == 0,
+            //fileHashToArrayIndexes[_fileHash] == 0, //this doesn't work as a "does the file exist" check because the first valid index 0 matches the unset default of 0.
+            checkFileHash(_fileHash) == 0,
             "The file does not exist."
         );
-      require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!");
+      require(msg.sender == fileHashToOwner[_fileHash], "Only File Owner can delete the file!");
 
-      uint index = fileHashToArrayIndexes[_filehash];
+      uint index = fileHashToArrayIndexes[_fileHash];
 
-      //remove filehash from FileHashes Array
+      //remove fileHash from fileHashes Array
       fileHashes[index] = fileHashes[fileHashes.length - 1];
       fileHashes.pop();
       //Delete mapping References
-      delete fileHashToArrayIndexes[_filehash];
+      delete fileHashToArrayIndexes[_fileHash];
       delete fileHashToShards[_fileHash];
-      delete shardsinFile_Count[_filehash];
+      delete shardsInFile_Count[_fileHash];
 
-      emit DeleteFile(_filehash); // Web application will pick this up and tell farmers to drop the relevant shards.
+      emit DeleteFile(_fileHash); // Web application will pick this up and tell farmers to drop the relevant shards.
     }
 
-    function checkFilehash(bytes20 memory _filehash) internal view returns(uint memory) {
+    function checkFileHash(bytes20 _filehash) internal view returns(uint) {
         // we go through all the filehashes
-        for (uint i = 0; i < filehashes.length; i++) {
+        for (uint i = 0; i < fileHashes.length; i++) {
             // if the filehash's owner is equal to the owner
-            if (filehash[i] == _filehash) {
+            if (fileHashes[i] == _filehash) {
                 return 1; //filehash found
             }
         }
@@ -111,53 +111,53 @@ contract ShardManager is Ownable {
 
     // Kerem's code below
 
-    mapping(string => uint[]) fileHashToShards;
-    uint public shardsInFilecount;
+    mapping(bytes20 => uint[]) fileHashToShards;
 
     // Mapping to store file hash owner's address
     mapping(string => address) fileHashOwners;
 
     // Modifier to restrict access to the file owner or an address with consent
-    modifier onlyFileOwnerOrConsent(string memory fileHash){
+    modifier _onlyFileOwnerOrConsent(bytes20 fileHash){
         require(
-            msg.sender == fileHashOwners[fileHash] || hasConsent(fileHash, msg.sender),
+            msg.sender == fileHashToOwner[fileHash] || hasConsent(fileHash, msg.sender),
             "Caller is not the file owner or does not have consent"
         );
+        _;
     }
 
     //function for user to notify blockchain which shards relate to their file.
-    function associateShardsWithFileHash(string memory _fileHash, uint[] memory shardIDs)
+    function associateShardsWithFileHash(bytes20 _fileHash, uint[] memory shardIDs)
         external
-        onlyFileOwnerOrConsent(_fileHash)
+        _onlyFileOwnerOrConsent(_fileHash)
     {
         require(shardIDs.length > 0, "Shard IDs must not be empty");
 
         // Store shardIDs in the mapping under the fileHash
         fileHashToShards[_fileHash] = shardIDs; //file to shards implies i pass in a file to get shards
 
-        // Increment the shardsInFile_count
-        shardsinFile_Count[_filehash] += shardIDs.length;
+        // Increment the shardsInFile_Count
+        shardsInFile_Count[_fileHash] += shardIDs.length;
     }
 
     // Function to retrieve shard IDs by file hash
-    function getShardIDs(string memory fileHash) external view returns (uint[] memory) {
+    function getShardIDs(bytes20 fileHash) external view returns (uint[] memory) {
         return  fileHashToShards[fileHash];
     }
 
     // Function to get the total count of shards in a file
-    function getShardsInFileCount() external view returns (uint) {
-        return shardsInFile_count;
+    function getshardsInFile_Count(bytes20 fileHash) external view returns (uint) {
+        return shardsInFile_Count[fileHash];
     }
 
     // Function to replace file hash owner's address
-    function setFileHashOwner(string memory fileHash, address owner) external {
-        require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can give away ownership of their file");
-        fileHashOwner[fileHash] = owner;
+    function setFileHashOwner(bytes20 fileHash, address owner) external {
+        require(msg.sender == fileHashToOwner[fileHash], "Only the File Owner can give away ownership of their file");
+        fileHashToOwner[fileHash] = owner;
     }
 
     // Function to check if an address has consent from the file owner
-    function hasConsent(string memory fileHash, address caller) internal view returns (bool) {
-        return fileHashOwners[fileHash] == caller;
+    function hasConsent(bytes20 _fileHash, address caller) internal view returns (bool) {
+        return fileHashToOwner[_fileHash] == caller;
     }
 
     // Implemented according to the google doc (Contract functions TODOS for March 24th)
@@ -208,7 +208,7 @@ contract ShardManager is Ownable {
 
     //start of jennifer's code:
     mapping (address => uint) private ownerFilehashCount;
-    mapping (bytes20 => uint) private shardsinFile_Count;
+    mapping (bytes20 => uint) private shardsInFile_Count;
 
     // [Provide all my fileHashes] return all fileHashes owned by user
     //Only called by the web server, not our users.
@@ -233,7 +233,7 @@ contract ShardManager is Ownable {
     function getShardsByFilehash (bytes20 _filehash) public view returns(uint[] memory) {
       require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can access its shards.");
 
-      uint[] memory filehashShards = new uint[](shardsinFile_Count[_filehash]); 
+      uint[] memory filehashShards = new uint[](shardsInFile_Count[_filehash]); 
         uint counter = 0;
         // we go through all the filehashes
         for (uint i = 0; i < shards.length; i++) {
