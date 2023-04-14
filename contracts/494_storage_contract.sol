@@ -234,7 +234,7 @@ contract ShardManager is Ownable {
         // we go through all the filehashes
         for (uint i = 0; i < fileHashes.length; i++) {
             // if the filehash's owner is equal to the owner
-            if (fileHashToOwner[ownerFilehashes[i]] == _owner) {
+            if (fileHashToOwner[fileHashes[i]] == _owner) {
                 // we add it to the ownerFilehashes array
                 ownerFilehashes[counter] = fileHashes[i];
                 counter++;
