@@ -67,11 +67,22 @@ contract ShardManager is Ownable {
         //the hash is the ripemd160 of a sha256 digest
     }
 
+    function checkFileHash(bytes20 _filehash) internal view returns (uint) {
+        // we go through all the filehashes
+        for (uint i = 0; i < fileHashes.length; i++) {
+            // if the filehash's owner is equal to the owner
+            if (fileHashes[i] == _filehash) {
+                return 1; //filehash found
+            }
+        }
+        return 0; // filehash doesn't exist
+    }
+
     function _deleteFileHash(bytes20 _fileHash) public {
         // Checks if the fileHash exists
         require(
             //fileHashToArrayIndexes[_fileHash] == 0, //this doesn't work as a "does the file exist" check because the first valid index 0 matches the unset default of 0.
-            checkFileHash(_fileHash) == 0,
+            checkFileHash(_fileHash) == 1,
             "The file does not exist."
         );
         require(
@@ -84,23 +95,13 @@ contract ShardManager is Ownable {
         //remove fileHash from fileHashes Array
         fileHashes[index] = fileHashes[fileHashes.length - 1];
         fileHashes.pop();
+        ownerFilehashCount[msg.sender]--;
         //Delete mapping References
         delete fileHashToArrayIndexes[_fileHash];
         delete fileHashToShards[_fileHash];
         delete shardsInFile_Count[_fileHash];
 
         emit DeleteFile(_fileHash); // Web application will pick this up and tell farmers to drop the relevant shards.
-    }
-
-    function checkFileHash(bytes20 _filehash) internal view returns (uint) {
-        // we go through all the filehashes
-        for (uint i = 0; i < fileHashes.length; i++) {
-            // if the filehash's owner is equal to the owner
-            if (fileHashes[i] == _filehash) {
-                return 1; //filehash found
-            }
-        }
-        return 0; // filehash doesn't exist
     }
 
     //given a filehash, return the list of farmers the website would need to contact to get all shard.
