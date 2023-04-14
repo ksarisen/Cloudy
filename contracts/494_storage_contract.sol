@@ -69,7 +69,7 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function _deleteFileHash(bytes20 memory _filehash, address _owner) public {
+    function _deleteFileHash(bytes20 memory _filehash) public {
         // Checks if the filehash exists
         require(
             //fileHashToArrayIndexes[_filehash] == 0, //this doesn't work as a "does the file exist" check because the first valid index 0 matches the unset default of 0.
