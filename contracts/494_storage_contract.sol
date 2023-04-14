@@ -70,7 +70,11 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
+     // check if the index is equal to the _filehash (uint index) - suggestion
     function _deleteFileHash(bytes20 _filehash) public {
+      // Checks if the filehash exists
+      require(checkFilehash(_filehash) == 0, "The file does not exist." );
+      // Checks if owner exists
       require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!");
 
       uint index = fileHashToArrayIndexes[_filehash];
@@ -83,9 +87,21 @@ contract ShardManager is Ownable {
 
       emit DeleteFile(_filehash); // assume shard manager will pick this up and tell farmers to drop the relevant shards.
     }
-    function remove(uint index) internal {
-    
+
+    function checkFilehash(bytes20 memory _filehash) internal view returns(uint memory) {
+        // we go through all the filehashes
+        for (uint i = 0; i < filehashes.length; i++) {
+            // if the filehash's owner is equal to the owner
+            if (filehash[i] == _filehash) {
+                return 1; //filehash found
+            }
+        }
+        return 0; // filehash doesn't exist
     }
+    
+    // function remove(uint index) internal {
+    
+    // }
     // function getFarmerIdsStoringFile(address _owner) external view returns(string[] memory) {
     // // Start here
     // }
