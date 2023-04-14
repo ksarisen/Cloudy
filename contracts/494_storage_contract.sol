@@ -32,7 +32,7 @@ contract ShardManager is Ownable {
     //string[] private availableFarmerIds;
 
     Shard[] private shards;
-    bytes20[] private filehashes;
+    bytes20[] private filehashes;//a list of 40 character ripeMD-160 hashes
 
     //fileHashToOwner tracks files and who owns them
     mapping (bytes20 => address) private fileHashToOwner;
@@ -53,10 +53,6 @@ contract ShardManager is Ownable {
     function _storeFile(bytes20 memory _filehash) public {
       //[Activate File] Owner can Upload filename and store in a map, along with tracking identity/wallet
       //require(/*baseline payment check*/);
-
-      //assert that the hash is a 40 character ripeMD-160 hash
-      if(strBytes.length <= 40)
-          revert;
 
       FileHashes.push(_filehash);
       uint index = FileHashes.length - 1;
