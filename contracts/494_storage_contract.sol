@@ -3,6 +3,7 @@
 pragma solidity >=0.8.2 <0.9.0;
 
 import ".deps/ownable.sol";
+import "contracts/StorageProviderContract.sol";
 
 /**
  * @title ShardManager
@@ -69,7 +70,7 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function _deleteFileHash(bytes20 _filehash, address _owner) public {
+    function _deleteFileHash(bytes20 _filehash) public {
       require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!");
 
       uint index = fileHashToArrayIndexes[_filehash];

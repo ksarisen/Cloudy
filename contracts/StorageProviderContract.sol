@@ -1,4 +1,6 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.8.2 <0.9.0;
 
 contract StorageProvider {
     mapping(uint256 => bytes) private storageData; // Mapping to store the data with keys as file IDs
