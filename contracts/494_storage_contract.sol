@@ -88,42 +88,43 @@ contract ShardManager is Ownable {
     mapping (address => uint) private userFileCount;
 
     // Storage Provider will provide(upload) their node ID(not sure if we need id, just address might be sufficent) and list of stored shards. 
-    function getDetailsByFarmer(Farmer _farmer) external view returns(uint memory, Shard[]) {
+    function getDetailsByFarmer(Farmer memory _farmer) external view returns(uint, Shard[] memory) {
       uint nodeId = _farmer.nodeId;
 
-      Shard[] memory shardList = new Shard[](farmerShardCount[result1]);
+      Shard[] memory shardList  = new Shard[](farmerShardCount[nodeId]);
       uint counter;
       for (uint i = 0; i < shards.length; i++) {
-        if ((shardIdtoFarmerId[Shards[i].shardId]) == _farmer) {
-          shardList[counter] = Shards[i];
+        if ((shardIdtoFarmerNodeId[shards[i].shardId]) == _farmer.nodeId) {
+          shardList[counter] = shards[i];
           counter++;
         }
       }
       return (nodeId, shardList);
     }
 
-    // Owner will provide the filename(fileHash?), and list of shard hashes (shardIds)?
-    function getDetailsByUser(address _user) external view returns(string[], Shard[]) {
-      string[] hashes = new string[](userFileCount[_user]);
-      uint counterOne;
+    // // Returns the list of file hashes, and shard ids.
+    // function getDetailsByUser() external view returns(string[] memory, Shard[] memory) {
+    //   bytes20[] memory hashes = new bytes20[](ownerFileCount[msg.sender]);
+    //   uint counterOne;
 
-      for (uint i = 0; i < fileHashes.length; i++) {
-        if (fileHashToOwner[FileHashes[i]] == _user) {
-          hashes[counter] = FileHashes[i];
-          counterOne++;
-        }
-      }
+    //   for (uint i = 0; i < fileHashes.length; i++) {
+    //     if (fileHashToOwner[fileHashes[i]] == msg.sender) {
+    //       hashes[counterOne] = fileHashes[i];
+    //       counterOne++;
+    //     }
+    //   }
+    //   //number of shards for bob the farmer = number of files * shards per file
 
-      Shard[] memory shardList = new Shard[](farmerShardCount[hashes]);
-      uint counterTwo;
-      for (uint i = 0; i < shards.length; i++) {
-        if (fileHashToOwner[(shardIdtoFileHash[Shards[i].shardId])] == _user) {
-          shardList[counter] = Shards[i];
-          counterTwo++;
-        }
-      }
-      return (hashes, shardList);
-    }
+    //   Shard[] memory shardList = new Shard[](farmerShardCount[hashes.length]);
+    //   uint counterTwo;
+    //   for (uint i = 0; i < shards.length; i++) {
+    //     if (fileHashToOwner[(shardIdtoFileHash[shards[i].shardId])] == msg.sender) {
+    //       shardList[counterTwo] = shards[i];
+    //       counterTwo++;
+    //     }
+    //   }
+    //   return (hashes, shardList);
+    // }
 
     //start of jennifer's code:
     mapping (address => uint) private ownerFilehashCount;
