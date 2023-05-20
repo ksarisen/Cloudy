@@ -33,7 +33,7 @@ contract ShardManager is Ownable {
     bytes20[] private fileHashes; //a list of 40 character ripeMD-160 hashes
 
     //fileHashToOwner tracks files and who owns them
-    mapping (bytes20 => address) private fileHashToOwner;
+    mapping (bytes20 => address) public fileHashToOwner;
     mapping (uint => bytes20) private shardIdtoFileHash;
     mapping (uint => uint) private shardIdtoFarmerNodeId;
 
@@ -140,7 +140,7 @@ contract ShardManager is Ownable {
     }
 
     // Function to retrieve shard IDs by file hash
-    function getShardIDs(bytes20 fileHash) internal view returns (uint[] memory) {
+    function getShardIDs(bytes20 fileHash) public view returns (uint[] memory) {
         return  fileHashToShards[fileHash];
     }
 
@@ -158,7 +158,7 @@ contract ShardManager is Ownable {
     }
 
     // Function to check if an address has consent from the file owner
-    function hasConsent(bytes20 _fileHash, address caller) internal view returns (bool) {
+    function hasConsent(bytes20 _fileHash, address caller) public view returns (bool) {
         return fileHashToOwner[_fileHash] == caller;
     }
 

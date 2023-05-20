@@ -37,19 +37,29 @@ contract ShardManagerTest {
     }
 
     function testAssociateShardsWithFileHash() public {
-        bytes20 fileHash = 0x1234567890123456789012345678901234567890;
+        bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
         uint[] memory shardIDs = new uint[](2);
         shardIDs[0] = 1;
         shardIDs[1] = 2;
 
+        // Call the _storeFile function to store a file hash
+        shardManager._storeFile(fileHash);
+
+        // Call the associateShardsWithFileHash function to associate shards with the file hash
         shardManager.associateShardsWithFileHash(fileHash, shardIDs);
 
-        // Assert shard IDs are associated with the file hash
-        assert(shardManager.getShardIDs(fileHash).length == 2);
+        // Call the getShardIDs function to retrieve the associated shard IDs
+        uint[] memory retrievedShardIDs = shardManager.getShardIDs(fileHash);
+
+        // Assert that the retrieved shard IDs match the associated shard IDs
+        assert(retrievedShardIDs.length == shardIDs.length);
+        for (uint i = 0; i < shardIDs.length; i++) {
+            assert(retrievedShardIDs[i] == shardIDs[i]);
+        }
     }
 
     function testGetShardsInFile_Count() public {
-        bytes20 fileHash = 0x1234567890123456789012345678901234567890;
+        bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
 
         // Only the file owner can check the number of shards
         uint shardCount = shardManager.getShardsInFile_Count(fileHash);
@@ -57,17 +67,22 @@ contract ShardManagerTest {
     }
 
     function testSetFileHashOwner() public {
-        bytes20 fileHash = 0x1234567890123456789012345678901234567890;
-        address newOwner = address(0x123);
+        bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
+        address newOwner = address(0x1234567890123456789012345678901234567890);
 
+        // Call the setFileHashOwner function to set the owner of the file hash
         shardManager.setFileHashOwner(fileHash, newOwner);
 
-        // Assert file hash owner is updated
-        assert(shardManager.fileHashToOwner(fileHash) == newOwner);
-    }
+        // Retrieve the owner of the file hash using the fileHashToOwner mapping
+        address retrievedOwner = shardManager.fileHashToOwner(fileHash);
+
+        // Assert that the retrieved owner matches the new owner
+        assert(retrievedOwner == newOwner);
+}
+
 
     function testHasConsent() public {
-        bytes20 fileHash = 0x1234567890123456789012345678901234567890;
+        bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
         address owner = address(0x123);
         address caller = address(0x456);
 
@@ -93,7 +108,7 @@ contract ShardManagerTest {
     }
 
      function testGetShardsByFilehash() public {
-        bytes20 fileHash = 0x1234567890123456789012345678901234567890;
+        bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
 
         // Associate shards with the file hash
         uint[] memory shardIDs = new uint[](2);
