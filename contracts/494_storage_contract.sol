@@ -64,7 +64,7 @@ contract ShardManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function checkFileHash(bytes20 _filehash) internal view returns (uint) {
+    function checkFileHash(bytes20 _filehash) public view returns (uint) {
         // we go through all the filehashes
         for (uint i = 0; i < fileHashes.length; i++) {
             // if the filehash's owner is equal to the owner
