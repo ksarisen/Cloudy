@@ -13,7 +13,6 @@ contract ShardManagerTest {
 
     function testStoreFile() public {
         bytes20 fileHash = bytes20(0x1234567890123456789012345678901234567890);
-        shardManager._storeFile(fileHash);
 
         // Call the _storeFile function
         shardManager._storeFile(fileHash);
@@ -22,7 +21,7 @@ contract ShardManagerTest {
         bytes20[] memory storedFileHashes = shardManager.getFilehashesByOwner(address(this));
 
         // Assert that the stored file hash matches the provided file hash
-        assert(storedFileHashes.length == 1);
+        Assert.ok(storedFileHashes.length == 1, "TestCase: Failed (Error)");
         assert(storedFileHashes[0] == fileHash);
     }
 
