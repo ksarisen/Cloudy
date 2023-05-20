@@ -3,6 +3,8 @@
 pragma solidity >=0.8.2 <0.9.0;
 
 import "contracts/494_storage_contract.sol";
+import "remix_tests.sol"; // this import is automatically injected by Remix
+import "remix_accounts.sol";
 
 contract ShardManagerTest {
     ShardManager public shardManager;
