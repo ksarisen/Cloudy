@@ -5,11 +5,11 @@ pragma solidity >=0.8.2 <0.9.0;
 import ".deps/ownable.sol";
 
 /**
- * @title ShardManager
+ * @title ClientManager
  * @dev turns files into many shards. ./contracts/Ben_1_cryptozombies_testing.sol
  * @custom:dev-run-script ./scripts/web3-lib.ts
  */
-contract ShardManager is Ownable {
+contract ClientManager is Ownable {
     
     struct Shard {
       //bytes20 filehash; // if you need the filehash check shardIdtoFileHash
@@ -25,8 +25,8 @@ contract ShardManager is Ownable {
       string storageType;
     }
 
-    Farmer[] private availableFarmers;
-    uint[] private availableFarmerNodeIds;
+    Farmer[] private availableFarmers; // lists all farmers, even ones that don't have space to add any more shards currently.
+    uint[] private availableFarmerNodeIds; // lists farmers with space available to insert more shards
 
     Shard[] private shards;
     //Farmer[] private farmers; //TODO: actually keep track of all farmers
@@ -56,7 +56,7 @@ contract ShardManager is Ownable {
     event FarmerRemoved(uint farmerNodeId);
 
     function _storeFile(bytes20 _filehash) public {
-      //[Activate File] Owner can Upload filename and store in a map, along with tracking identity/wallet
+      //File Owner uploads filehash to track their ownership
       //require(/*baseline payment check*/);
 
       fileHashes.push(_filehash);
@@ -171,17 +171,18 @@ contract ShardManager is Ownable {
     //start of jennifer's code:
     mapping (bytes20 => uint) private shardsInFile_Count;
 
-    // [Provide all my fileHashes] return all fileHashes owned by user
+    // [Provide all my fileHashes] return all fileHashes owned by user.
+    // NOTE: this doesnt return the actual files, just their identifiers.
     //Only called by the web server, not our users.
-    function getFilehashesByOwner(address _owner) external view returns (bytes20[] memory) {
+    function getMyFilehashes() external view returns (bytes20[] memory) {
     // _owner from contract ownable
     // we are creating a new array with the size based on the no. of filehashes the owner has
-      bytes20[] memory ownerFilehashes = new bytes20[](ownerFileCount[_owner]); 
+      bytes20[] memory ownerFilehashes = new bytes20[](ownerFileCount[msg.sender]); 
         uint counter = 0;
         // we go through all the filehashes
         for (uint i = 0; i < fileHashes.length; i++) {
           // if the filehash's owner is equal to the owner
-          if (fileHashToOwner[fileHashes[i]] == _owner) {
+          if (fileHashToOwner[fileHashes[i]] == msg.sender) {
             // we add it to the ownerFilehashes array
             ownerFilehashes[counter] = fileHashes[i];
             counter++;
@@ -222,18 +223,18 @@ contract ShardManager is Ownable {
       //availableFarmers.push(Farmer(_address, _farmerNodeId, 0, _storageSize, _storageType));
 
       Farmer memory farmer = Farmer({
-            walletAddress: _walletAddress,
-            nodeId: _nodeId,
-            currentStoredSize: 0,
-            maxStorageSize: _maxStorageSize,
-            storageType: _storageType
-        });
+          walletAddress: _walletAddress,
+          nodeId: _nodeId,
+          currentStoredSize: 0,
+          maxStorageSize: _maxStorageSize,
+          storageType: _storageType
+      });
 
-        availableFarmers.push(farmer);
-        availableFarmerNodeIds.push(_nodeId);
-        nodeIdToFarmer[_nodeId] = farmer;
+      availableFarmers.push(farmer);
+      availableFarmerNodeIds.push(_nodeId);
+      nodeIdToFarmer[_nodeId] = farmer;
 
-        emit FarmerAdded(_nodeId);     
+      emit FarmerAdded(_nodeId);     
     }
     
     // OLD VERSION
