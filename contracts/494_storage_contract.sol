@@ -34,14 +34,26 @@ contract ShardManager is Ownable {
 
     //fileHashToOwner tracks files and who owns them
     mapping (bytes20 => address) public fileHashToOwner;
+    mapping(bytes20 => uint) public fileHashToShardCount;
     mapping (uint => bytes20) private shardIdtoFileHash;
     mapping (uint => uint) private shardIdtoFarmerNodeId;
+    mapping(bytes20 => uint[]) fileHashToShards;
+
+    mapping (uint => Farmer) public nodeIdToFarmer;
+    
+    // Mapping to store file hash owner's address
+    mapping(string => address) fileHashOwners;
 
     mapping(bytes20 => uint) private fileHashToArrayIndexes;
 
     event NewFile(bytes20 _filehash);
     event DeleteFile(bytes20 _filehash);
-    event deleteShardFromFarmer(uint shardId, uint farmerId);
+
+    event ShardAdded(uint shardId);
+    event ShardAssigned(uint shardId, uint farmerNodeId);
+    event ShardDeleted(uint shardId, uint farmerNodeId);
+    event FarmerAdded(uint farmerNodeId);
+    event FarmerRemoved(uint farmerNodeId);
 
     function _storeFile(bytes20 _filehash) public {
       //[Activate File] Owner can Upload filename and store in a map, along with tracking identity/wallet
@@ -82,13 +94,16 @@ contract ShardManager is Ownable {
             checkFileHash(_fileHash) == 1,
             "The file does not exist."
         );
-      require(
-            msg.sender == fileHashToOwner[_fileHash],
-            "Only File Owner can delete the file!"
+      // Check if the sender is the owner of the file
+        require(
+            fileHashToOwner[_fileHash] == msg.sender,
+            "Only the owner can delete the file."
         );
 
       uint index = fileHashToArrayIndexes[_fileHash];
-
+      
+      // Delete the file from mappings and arrays
+      
       //remove fileHash from fileHashes Array
       fileHashes[index] = fileHashes[fileHashes.length - 1];
       fileHashes.pop();
@@ -105,15 +120,6 @@ contract ShardManager is Ownable {
     // function getFarmerIdsStoringFile(bytes20 memory _filehash) internal returns(uint[] memory) {
         //return array of nodeIds
     // }
-    
-    //End of Ben's code
-
-    // Kerem's code below
-
-    mapping(bytes20 => uint[]) fileHashToShards;
-
-    // Mapping to store file hash owner's address
-    mapping(string => address) fileHashOwners;
 
     // Modifier to restrict access to the file owner or an address with consent
     modifier _onlyFileOwnerOrConsent(bytes20 fileHash) {
@@ -126,10 +132,7 @@ contract ShardManager is Ownable {
     }
 
     //function for user to notify blockchain which shards relate to their file.
-    function associateShardsWithFileHash(
-      bytes20 _fileHash, 
-      uint[] memory shardIDs
-    ) external _onlyFileOwnerOrConsent(_fileHash) {
+    function associateShardsWithFileHash(bytes20 _fileHash, uint[] memory shardIDs) external _onlyFileOwnerOrConsent(_fileHash) {
         require(shardIDs.length > 0, "Shard IDs must not be empty");
 
         // Store shardIDs in the mapping under the fileHash
@@ -162,57 +165,15 @@ contract ShardManager is Ownable {
         return fileHashToOwner[_fileHash] == caller;
     }
 
-    // Implemented according to the google doc (Contract functions TODOS for March 24th)
-
-    //mapping (address => uint) private farmerToNodeId;
     mapping (uint => uint) private farmerShardCount;
-    mapping (address => uint) private ownerFileCount;
-
-    // // Storage Provider will provide(upload) their node ID(not sure if we need id, just address might be sufficent) and list of stored shards. 
-    // function getDetailsByFarmer(Farmer memory _farmer) external view returns(uint, Shard[] memory) {
-    //   uint nodeId = _farmer.nodeId;
-
-    //   Shard[] memory shardList  = new Shard[](farmerShardCount[nodeId]);
-    //   uint counter;
-    //   for (uint i = 0; i < shards.length; i++) {
-    //     if ((shardIdtoFarmerNodeId[shards[i].shardId]) == _farmer.nodeId) {
-    //       shardList[counter] = shards[i];
-    //       counter++;
-    //     }
-    //   }
-    //   return (nodeId, shardList);
-    // }
-
-    // // Returns the list of file hashes, and shard ids.
-    // function getDetailsByUser() external view returns(string[] memory, Shard[] memory) {
-    //   bytes20[] memory hashes = new bytes20[](ownerFileCount[msg.sender]);
-    //   uint counterOne;
-
-    //   for (uint i = 0; i < fileHashes.length; i++) {
-    //     if (fileHashToOwner[fileHashes[i]] == msg.sender) {
-    //       hashes[counterOne] = fileHashes[i];
-    //       counterOne++;
-    //     }
-    //   }
-    //   //number of shards for bob the farmer = number of files * shards per file
-
-    //   Shard[] memory shardList = new Shard[](farmerShardCount[hashes.length]);
-    //   uint counterTwo;
-    //   for (uint i = 0; i < shards.length; i++) {
-    //     if (fileHashToOwner[(shardIdtoFileHash[shards[i].shardId])] == msg.sender) {
-    //       shardList[counterTwo] = shards[i];
-    //       counterTwo++;
-    //     }
-    //   }
-    //   return (hashes, shardList);
-    // }
+    mapping (address => uint) public ownerFileCount;
 
     //start of jennifer's code:
     mapping (bytes20 => uint) private shardsInFile_Count;
 
     // [Provide all my fileHashes] return all fileHashes owned by user
     //Only called by the web server, not our users.
-    function getFilehashesByOwner(address _owner) external view onlyOwner returns (bytes20[] memory) {
+    function getFilehashesByOwner(address _owner) external view returns (bytes20[] memory) {
     // _owner from contract ownable
     // we are creating a new array with the size based on the no. of filehashes the owner has
       bytes20[] memory ownerFilehashes = new bytes20[](ownerFileCount[_owner]); 
@@ -229,57 +190,73 @@ contract ShardManager is Ownable {
       return ownerFilehashes;
     }
 
-    
-    function getShardsByFilehash (bytes20 _filehash) public view returns(uint[] memory) {
-      require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can access its shards.");
+    function getShardsByFilehash(bytes20 _filehash) public view returns (uint[] memory) {
+        require(msg.sender == fileHashToOwner[_filehash], "Only the File Owner can access its shards.");
 
-      uint[] memory filehashShards = new uint[](shardsInFile_Count[_filehash]); 
-        uint counter = 0;
-        // we go through all the filehashes
-        for (uint i = 0; i < shards.length; i++) {
-          // if the filehash's owner is equal to the owner
-          if (shardIdtoFileHash[shards[i].shardId] == _filehash) {
-            // we add it to the ownerFilehashes array
-            filehashShards[counter] = shards[i].shardId; 
-            counter++;
-          }
-        }
-      return filehashShards;
+        return fileHashToShards[_filehash];
     }
 
     // [Drop Deleted Shards] Storage Provider is told to stop storing deleted data 
     //After a user deletes a file, drop its shards
     //emits the farmerId and shardId
-    function _dropShardsOfDeletedFile (bytes20 _filehash) private {
+
+    function _dropShardsOfDeletedFile (bytes20 _filehash) public {
       require(msg.sender == fileHashToOwner[_filehash], "Only File Owner can delete the file!"); //either make this function public (if we expect it to be called outside the contract) or remove this security check
       // find shards by filehashId
       uint[] memory filehashShards = getShardIDs(_filehash);
       // go through all the filehash's shards
       for (uint i = 0; i < filehashShards.length; i++) {
         // check which farmer has the shard
-
-         for (uint j = 0; j < availableFarmerNodeIds.length; j++) {
-           if (shardIdtoFarmerNodeId[i] == availableFarmerNodeIds[j]) {  
-              /// expect the caller to listen for a series of deleteShard events
-              emit deleteShardFromFarmer(shardIdtoFarmerNodeId[filehashShards[i]], filehashShards[i]);
-           }
-         }
+        for (uint j = 0; j < availableFarmerNodeIds.length; j++) {
+          if (shardIdtoFarmerNodeId[i] == availableFarmerNodeIds[j]) {  
+            /// expect the caller to listen for a series of deleteShard events
+            emit ShardDeleted(shardIdtoFarmerNodeId[filehashShards[i]], filehashShards[i]);
+          }
         }
+      }
     }
 
-    function addStorageProvider(address _address, uint _nodeID, uint _storageSize, string memory _storageType) external {
-      availableFarmers.push(Farmer(_address, _nodeID, 0, _storageSize, _storageType));
+    function addStorageProvider(address _walletAddress, uint _nodeId, uint _maxStorageSize, string memory _storageType) public onlyOwner {
+
+      // OLD VERSION
+      //availableFarmers.push(Farmer(_address, _farmerNodeId, 0, _storageSize, _storageType));
+
+      Farmer memory farmer = Farmer({
+            walletAddress: _walletAddress,
+            nodeId: _nodeId,
+            currentStoredSize: 0,
+            maxStorageSize: _maxStorageSize,
+            storageType: _storageType
+        });
+
+        availableFarmers.push(farmer);
+        availableFarmerNodeIds.push(_nodeId);
+        nodeIdToFarmer[_nodeId] = farmer;
+
+        emit FarmerAdded(_nodeId);     
     }
     
-    function removeStorageProvider(address _address) external {
-        for (uint i = 0; i < availableFarmers.length; i++) {
-            if (availableFarmers[i].walletAddress == _address) {
-                availableFarmers[i] = availableFarmers[
-                    availableFarmers.length - 1
-                ];
-                availableFarmers.pop();
-            }
-        }
+    // OLD VERSION
+    // function removeStorageProvider(address _address) external {
+    //     for (uint i = 0; i < availableFarmers.length; i++) {
+    //         if (availableFarmers[i].walletAddress == _address) {
+    //             availableFarmers[i] = availableFarmers[
+    //                 availableFarmers.length - 1
+    //             ];
+    //             availableFarmers.pop();
+    //         }
+    //     }
+    // }
+
+    function removeStorageProvider(uint _nodeId) public onlyOwner {
+      // Check if the farmer exists
+      require(containsNode(_nodeId), "Invalid farmer node ID.");
+
+      // Remove the farmer from the available farmers list
+      delete availableFarmers[_nodeId];
+      delete availableFarmerNodeIds[_nodeId];
+
+      emit FarmerRemoved(_nodeId);
     }
 
     function getStorageProviderNodeID(address _address) external view returns (uint) {
@@ -289,36 +266,107 @@ contract ShardManager is Ownable {
         }
       }
 
-      revert("Not found");
+      return 0;
     }
 
-    function addShardToStorageProvider(
-        uint _shardId,
-        uint _shardSize,
-        uint _nodeId
-    ) external {
-        for (uint i = 0; i < availableFarmers.length; i++) {
-            if (availableFarmers[i].nodeId == _nodeId) {
-                require(
-                    (availableFarmers[i].maxStorageSize -
-                        availableFarmers[i].currentStoredSize) >= _shardSize,
-                    "farmer does not have enough space"
-                );
-                availableFarmers[i].currentStoredSize += _shardSize;
-                shardIdtoFarmerNodeId[_shardId] = _nodeId;
-            }
-        }
+    function addShardToStorageProvider(uint _shardId, uint _farmerNodeId) public onlyOwner {
+
+        // Check if the farmer exists
+        require(containsNode(_farmerNodeId), "Invalid farmer node ID.");
+
+        // Check if the farmer has available storage
+        Farmer storage farmer = availableFarmers[_farmerNodeId];
+        require(farmer.currentStoredSize < farmer.maxStorageSize, "Farmer has reached maximum storage capacity.");
+
+        // Check if the shard is already assigned to a farmer
+        require(shardIdtoFarmerNodeId[_shardId] == 0, "Shard is already assigned to a farmer.");
+
+        // Assign the shard to the farmer
+        shardIdtoFarmerNodeId[_shardId] = _farmerNodeId;
+
+        // Update the farmer's storage capacity
+        farmer.currentStoredSize++;
+
+        // Emit event
+        emit ShardAssigned(_shardId, _farmerNodeId);
+
+        // OLD VERSION
+        // for (uint i = 0; i < availableFarmers.length; i++) {
+        //     if (availableFarmers[i].nodeId == _farmerNodeId) {
+        //         require((availableFarmers[i].maxStorageSize - availableFarmers[i].currentStoredSize) >= _shardSize,"farmer does not have enough space");
+        //         availableFarmers[i].currentStoredSize += _shardSize;
+        //         shardIdtoFarmerNodeId[_shardId] = _farmerNodeId;
+        //     }
+        // }
     }
 
-    function removeShardFromStorageProvider(
-        uint _shardId,
-        uint _shardSize
-    ) external {
-        for (uint i = 0; i < availableFarmers.length; i++) {
-            if (availableFarmers[i].nodeId == shardIdtoFarmerNodeId[_shardId]) {
-                availableFarmers[i].currentStoredSize -= _shardSize;
-                delete shardIdtoFarmerNodeId[_shardId];
+    function removeShardFromStorageProvider(uint _shardId, uint _farmerNodeId) public onlyOwner {
+
+        // Check if the farmer exists
+        require(containsNode(_farmerNodeId), "Invalid farmer node ID.");
+
+        // Check if the shard is assigned to the given farmer
+        require(shardIdtoFarmerNodeId[_shardId] == _farmerNodeId, "Shard is not assigned to the specified farmer.");
+
+        // Remove the shard from the farmer
+        delete shardIdtoFarmerNodeId[_shardId];
+
+        // Update the farmer's storage capacity
+        Farmer storage farmer = availableFarmers[_farmerNodeId];
+        farmer.currentStoredSize--;
+
+        // Emit event
+        emit ShardDeleted(_shardId, _farmerNodeId);
+        
+        
+        // OLD VERSION
+        // for (uint i = 0; i < availableFarmers.length; i++) {
+        //     if (availableFarmers[i].nodeId == shardIdtoFarmerNodeId[_shardId]) {
+        //         availableFarmers[i].currentStoredSize -= _shardSize;
+        //         delete shardIdtoFarmerNodeId[_shardId];
+        //     }
+        // }
+    }
+
+    function getShardData(uint _shardId) public view returns (string memory) {
+        // Check if the shard exists
+        require(_shardId < shards.length, "Invalid shard ID.");
+
+        return shards[_shardId].shardData;
+    }
+
+    function getFarmerIdFromShardId(uint _shardId) public view returns (uint) {
+      return shardIdtoFarmerNodeId[_shardId];
+    }
+
+    function getShardCount() public view returns (uint) {
+        return shards.length;
+    }
+
+    function getFarmerCount() public view returns (uint) {
+        return availableFarmers.length;
+    }
+
+    function getFarmer(uint _nodeId) public view returns (address, uint, uint, uint, string memory) {
+        // Check if the farmer exists
+        require(_nodeId < availableFarmers.length, "Invalid farmer node ID.");
+
+        Farmer storage farmer = availableFarmers[_nodeId];
+        return (
+            farmer.walletAddress,
+            farmer.nodeId,
+            farmer.currentStoredSize,
+            farmer.maxStorageSize,
+            farmer.storageType
+        );
+    }
+
+    function containsNode(uint nodeId) public view returns (bool) {
+        for (uint i = 0; i < availableFarmerNodeIds.length; i++) {
+            if (availableFarmerNodeIds[i] == nodeId) {
+                return true;
             }
         }
+        return false;
     }
 } //end of contract
