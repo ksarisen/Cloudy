@@ -253,14 +253,28 @@ contract ClientManagerTest /*is ClientManager*/{
 
         // Set a farmer account
         //address storageProvider = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
-        clientManager.addStorageProvider(account0, 1, 100, "Type");
+        uint nodeId;
+        try clientManager.addStorageProvider(account1, 100, "Type") returns (uint newNodeId) {
+            nodeId = newNodeId;
+        } catch Error(string memory reason) {
+            //test case fails if we hit an error
+            Assert.ok(false, reason);
+        } catch {
+            Assert.ok(false, "Unexpected error in addStorageProvider");
+        }
+        
+        
 
         // Get the initial storage provider count
         uint initialProviderCount = clientManager.getFarmerCount();
+
+        //confirm addition worked
+        Assert.equal(initialProviderCount, 1, "Failed to insert first provider in testRemoveStorageProvider()");
+
         // Remove the storage provider
         
         // Get the updated storage provider count
-        try clientManager.removeStorageProvider(1) {
+        try clientManager.removeStorageProvider(nodeId) {
         } catch Error(string memory reason) {
             //test case fails if we hit an error
             Assert.ok(false, reason);
@@ -277,17 +291,26 @@ contract ClientManagerTest /*is ClientManager*/{
     }
     /// #sender: account-0
     function getStorageProviderNodeID_Test() public {
-        clientManager.addStorageProvider(address(this), 1, 100, "Type A");
+        clientManager.addStorageProvider(address(this), 100,  "Type A");
         //We support adding the same storage provider with a different data storage type available
-        clientManager.addStorageProvider(address(this), 2, 200, "Type B");
+        uint nodeId;
+        try clientManager.addStorageProvider(account1, 200, "Type B") returns (uint newNodeId) {
+            nodeId = newNodeId;
+        } catch Error(string memory reason) {
+            //test case fails if we hit an error
+            Assert.ok(false, reason);
+        } catch {
+            Assert.ok(false, "Unexpected error in addStorageProvider");
+        }
+        
 
         uint nodeID = clientManager.getStorageProviderNodeID(address(this));
-        Assert.equal(nodeID, 1, "Incorrect storage provider node ID");
+        Assert.equal(nodeID, nodeId, "Incorrect storage provider node ID");
     }
     /// #sender: account-0
     function getStorageProviderNodeID_NonExistentProvider_Test() public {
-        clientManager.addStorageProvider(address(this), 1, 100, "Type A");
-        clientManager.addStorageProvider(address(this), 2, 200, "Type B");
+        clientManager.addStorageProvider(address(this), 100,  "Type A");
+        clientManager.addStorageProvider(address(this), 200, "Type B");
 
         uint nodeID = clientManager.getStorageProviderNodeID(address(0x123456789));
         Assert.equal(nodeID, 0, "Expected 0 for non-existent storage provider node ID");
@@ -295,13 +318,12 @@ contract ClientManagerTest /*is ClientManager*/{
     /// #sender: account-0
     function testAddShardToStorageProvider() public {
         uint shardId = 0;
-        uint farmerNodeId = 0;
 
         // Set a farmer account
         address storageProvider = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
 
         // Add a storage provider
-        clientManager.addStorageProvider(storageProvider, farmerNodeId, 10, "Type A");
+        uint farmerNodeId = clientManager.addStorageProvider(storageProvider, 10, "Type A");
 
         // Add a shard to the storage provider
         clientManager.addShardToStorageProvider(shardId, farmerNodeId);
@@ -312,13 +334,12 @@ contract ClientManagerTest /*is ClientManager*/{
     /// #sender: account-0
     function testRemoveShardFromStorageProvider() public {
         uint shardId = 0;
-        uint farmerNodeId = 0;
 
         // Set a farmer account
         address storageProvider = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
 
         // Add a storage provider
-        clientManager.addStorageProvider(storageProvider, farmerNodeId, 10, "Type A");
+        uint farmerNodeId = clientManager.addStorageProvider(storageProvider, 10, "Type A");
 
         // Add a shard to the storage provider
         clientManager.addShardToStorageProvider(shardId, farmerNodeId);

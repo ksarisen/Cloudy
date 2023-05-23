@@ -27,6 +27,8 @@ contract ClientManager is Ownable {
 
     Farmer[] private availableFarmers; // lists all farmers, even ones that don't have space to add any more shards currently.
     uint[] private availableFarmerNodeIds; // lists farmers with space available to insert more shards
+    mapping(uint => uint) private farmerNodeIdToFarmerArrayIndex;
+    uint farmerNodeIdIncrementer = 0;
 
     Shard[] private shards;
     //Farmer[] private farmers; //TODO: actually keep track of all farmers
@@ -39,7 +41,7 @@ contract ClientManager is Ownable {
     mapping (uint => uint) private shardIdtoFarmerNodeId;
     mapping(bytes20 => uint[]) fileHashToShards;
 
-    mapping (uint => Farmer) public nodeIdToFarmer;
+    // mapping (uint => Farmer) public nodeIdToFarmer; //deprecated, instead use availableFarmers[farmerNodeIdToFarmerArrayIndex[nodeId]]
     
     // Mapping to store file hash owner's address
     mapping(string => address) fileHashOwners;
@@ -217,24 +219,33 @@ contract ClientManager is Ownable {
       }
     }
 
-    function addStorageProvider(address _walletAddress, uint _nodeId, uint _maxStorageSize, string memory _storageType) public {
-      require(msg.sender == _walletAddress || msg.sender == owner(), "Storage Providers can only be added by the contract owner's address or the address being registered!"); 
+    function addStorageProvider(address _walletAddress, uint _maxStorageSize, string memory _storageType) public returns (uint _nodeId) {
+      require(msg.sender == _walletAddress || msg.sender == owner(), "Storage Providers can only be added by the contract owner's address or the address being registered!");
       // OLD VERSION
       //availableFarmers.push(Farmer(_address, _farmerNodeId, 0, _storageSize, _storageType));
 
       Farmer memory farmer = Farmer({
           walletAddress: _walletAddress,
-          nodeId: _nodeId,
+          nodeId: farmerNodeIdIncrementer,
           currentStoredSize: 0,
           maxStorageSize: _maxStorageSize,
           storageType: _storageType
       });
 
-      availableFarmers.push(farmer);
-      availableFarmerNodeIds.push(_nodeId);
-      nodeIdToFarmer[_nodeId] = farmer;
+    //   mapping(uint => uint) private farmerNodeIdToArrayIndexes;
+    // uint activeFarmerCount = 0;
+      //Add new Farmer to list of Active Farmers; associate its nodeId
+      
 
-      emit FarmerAdded(_nodeId);     
+      availableFarmers.push(farmer);
+      availableFarmerNodeIds.push(farmer.nodeId);
+
+      uint index = availableFarmers.length - 1;
+      farmerNodeIdToFarmerArrayIndex[farmer.nodeId] = index;
+      farmerNodeIdIncrementer++; //ensures node ids are unique
+      //farmerNodeIdToFarmerArrayIndex[farmer.nodeId] = farmer;
+
+      emit FarmerAdded(farmer.nodeId);     
     }
     
     // OLD VERSION
@@ -253,13 +264,19 @@ contract ClientManager is Ownable {
 
        // Check if the farmer exists
       require(containsNode(_nodeId), "Invalid farmer node ID.");
-      require(msg.sender == _walletAddress || msg.sender == owner(), "Storage Providers can only be removed by the contract owner's address or the address being registered!"); 
+
+      uint index = farmerNodeIdToFarmerArrayIndex[_nodeId];
+      require(msg.sender == availableFarmers[index].walletAddress || msg.sender == owner(), "Storage Providers can only be removed by the contract owner's address or the address being registered!"); 
       
 
-      // Remove the farmer from the available farmers list
+      availableFarmers[index] = availableFarmers[availableFarmers.length - 1];
+      availableFarmers.pop();
 
-      delete availableFarmers[_nodeId];
-      delete availableFarmerNodeIds[_nodeId];
+       // Remove the farmer from the available farmers list
+      availableFarmerNodeIds[index] = availableFarmerNodeIds[availableFarmerNodeIds.length - 1];
+      availableFarmerNodeIds.pop();
+
+     
 
       emit FarmerRemoved(_nodeId);
     }
