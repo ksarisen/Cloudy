@@ -217,8 +217,8 @@ contract ClientManager is Ownable {
       }
     }
 
-    function addStorageProvider(address _walletAddress, uint _nodeId, uint _maxStorageSize, string memory _storageType) public onlyOwner {
-
+    function addStorageProvider(address _walletAddress, uint _nodeId, uint _maxStorageSize, string memory _storageType) public {
+      require(msg.sender == _walletAddress || msg.sender == owner(), "Storage Providers can only be added by the contract owner's address or the address being registered!"); 
       // OLD VERSION
       //availableFarmers.push(Farmer(_address, _farmerNodeId, 0, _storageSize, _storageType));
 
@@ -249,11 +249,15 @@ contract ClientManager is Ownable {
     //     }
     // }
 
-    function removeStorageProvider(uint _nodeId) public onlyOwner {
-      // Check if the farmer exists
+    function removeStorageProvider(uint _nodeId) public {
+
+       // Check if the farmer exists
       require(containsNode(_nodeId), "Invalid farmer node ID.");
+      require(msg.sender == _walletAddress || msg.sender == owner(), "Storage Providers can only be removed by the contract owner's address or the address being registered!"); 
+      
 
       // Remove the farmer from the available farmers list
+
       delete availableFarmers[_nodeId];
       delete availableFarmerNodeIds[_nodeId];
 

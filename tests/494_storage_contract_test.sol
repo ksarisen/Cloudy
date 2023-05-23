@@ -6,7 +6,7 @@ import "remix_tests.sol";
 import "remix_accounts.sol";
 import "/contracts/494_storage_contract.sol";
 
-contract ClientManagerTest is ClientManager{
+contract ClientManagerTest /*is ClientManager*/{
     ClientManager clientManager;
     bytes20 fileHash1;
     bytes20 fileHash2;
@@ -26,10 +26,10 @@ contract ClientManagerTest is ClientManager{
         //e.g. without this reset, adding a file to a mapping will not have a length of 1 after the first run.
         
         clientManager = new ClientManager();
-        if (clientManager.owner() != account0){
-            //make sure the owner is consistent, and available
-            clientManager.transferOwnership(account0);
-        }
+        // if (clientManager.owner() != account0){
+        //     //make sure the owner is consistent, and available
+        //     clientManager.transferOwnership(account0);
+        // }
         
     }
 
@@ -250,12 +250,10 @@ contract ClientManagerTest is ClientManager{
     }
     /// #sender: account-0
     function testRemoveStorageProvider() public {
-        //address test = clientManager.owner();
-        Assert.equal(clientManager.owner(), account0, "owner should be account0");
 
         // Set a farmer account
-        address storageProvider = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
-        clientManager.addStorageProvider(storageProvider, 1, 100, "Type");
+        //address storageProvider = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
+        clientManager.addStorageProvider(account0, 1, 100, "Type");
 
         // Get the initial storage provider count
         uint initialProviderCount = clientManager.getFarmerCount();
