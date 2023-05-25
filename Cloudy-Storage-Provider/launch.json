@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Run Unit Tests",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "args": [
+                "CloudyUnitTest.py"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
