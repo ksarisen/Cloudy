@@ -1,0 +1,392 @@
+{
+	"compiler": {
+		"version": "0.8.18+commit.87f61d96"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "bytes20",
+						"name": "_filehash",
+						"type": "bytes20"
+					}
+				],
+				"name": "DeleteFile",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "bytes20",
+						"name": "_filehash",
+						"type": "bytes20"
+					}
+				],
+				"name": "NewFile",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnershipTransferred",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "shardId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "farmerId",
+						"type": "uint256"
+					}
+				],
+				"name": "deleteShardFromFarmer",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "_fileHash",
+						"type": "bytes20"
+					}
+				],
+				"name": "_deleteFileHash",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "_filehash",
+						"type": "bytes20"
+					}
+				],
+				"name": "_storeFile",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_shardId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_shardSize",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_nodeId",
+						"type": "uint256"
+					}
+				],
+				"name": "addShardToStorageProvider",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_address",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_nodeID",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_storageSize",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "_storageType",
+						"type": "string"
+					}
+				],
+				"name": "addStorageProvider",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "_fileHash",
+						"type": "bytes20"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "shardIDs",
+						"type": "uint256[]"
+					}
+				],
+				"name": "associateShardsWithFileHash",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_owner",
+						"type": "address"
+					}
+				],
+				"name": "getFilehashesByOwner",
+				"outputs": [
+					{
+						"internalType": "bytes20[]",
+						"name": "",
+						"type": "bytes20[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "_filehash",
+						"type": "bytes20"
+					}
+				],
+				"name": "getShardsByFilehash",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "fileHash",
+						"type": "bytes20"
+					}
+				],
+				"name": "getShardsInFile_Count",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_address",
+						"type": "address"
+					}
+				],
+				"name": "getStorageProviderNodeID",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "owner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_shardId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_shardSize",
+						"type": "uint256"
+					}
+				],
+				"name": "removeShardFromStorageProvider",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_address",
+						"type": "address"
+					}
+				],
+				"name": "removeStorageProvider",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "renounceOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes20",
+						"name": "fileHash",
+						"type": "bytes20"
+					},
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					}
+				],
+				"name": "setFileHashOwner",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "transferOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"custom:dev-run-script": "./scripts/web3-lib.ts",
+			"details": "turns files into many shards. ./contracts/Ben_1_cryptozombies_testing.sol",
+			"kind": "dev",
+			"methods": {
+				"owner()": {
+					"details": "Returns the address of the current owner."
+				},
+				"renounceOwnership()": {
+					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
+				},
+				"transferOwnership(address)": {
+					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+				}
+			},
+			"title": "ShardManager",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/494_storage_contract.sol": "ShardManager"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		".deps/context.sol": {
+			"keccak256": "0x81d5fc973a522c8909d60be6a201869d46aa47b030b8813f60616404628c2b94",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://9755b505799e622d964a843a8ed1fd60fedffca230178e5cb95ae9280df4dcd2",
+				"dweb:/ipfs/QmRkhUYUUgRZ2QYJjmtQct2ubyYwS3bdUMhbuFYM12VfYn"
+			]
+		},
+		".deps/ownable.sol": {
+			"keccak256": "0xdbe65e512db4d3c98a3df5dde090750d14eebe1eb62059695c65f19ff2883370",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://d04844ece79b9df0e3156a874e16534b0f4819c3e31d7fb323ffad934abb08d1",
+				"dweb:/ipfs/QmQ32tEjnDCT8FPbGoxYus39B4dXxqutiAngda8SoKjQze"
+			]
+		},
+		"contracts/494_storage_contract.sol": {
+			"keccak256": "0x5ca6676530a600fb0bd7f371af3d799fbdb08d594d28c0ee13855375510bc534",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://23551957a794795d427cae924aaaf6415155b3b175d50cdc28cebb4823563925",
+				"dweb:/ipfs/QmPb5ntJYgUK5ranwUPa82XcLTHXiVLAqkAi7wHbL8CJ1y"
+			]
+		}
+	},
+	"version": 1
+}
