@@ -7,8 +7,14 @@
             "request": "launch",
             "module": "unittest",
             "args": [
+                "-m",
+                "unittest",
+                "--env",
+                "PYTHON_ENV=development",
+                "-k",
                 "CloudyUnitTest.py"
             ],
+            "envFile": "${workspaceFolder}/.env",
             "cwd": "${workspaceFolder}"
         }
     ]

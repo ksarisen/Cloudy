@@ -1,3 +1,7 @@
 
-Cloudy-Storage-Provider/.env
+#Don't publish your secret environment variables!
+.env
+#Don't publish compiled files.
 *.pyc
+#Ignore the virtual environment Ben needed to run Flask python locally
+venv/*
