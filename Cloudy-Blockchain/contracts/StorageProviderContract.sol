@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.2 <0.9.0;
 
-import "contracts/494_storage_contract.sol";
+import "Cloudy-Blockchain/contracts/cloudy_contract.sol";
 
 contract StorageProvider is ShardManager {
     mapping(uint256 => bytes) private storageData; // Mapping to store the data with keys as file IDs

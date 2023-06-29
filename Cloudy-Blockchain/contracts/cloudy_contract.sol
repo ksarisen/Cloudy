@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.2 <0.9.0;
 
-import ".deps/ownable.sol";
+import "../.deps/ownable.sol";
 
 /**
  * @title ClientManager
@@ -78,7 +78,7 @@ contract ClientManager is Ownable {
       //the hash is the ripemd160 of a sha256 digest
     }
 
-    function checkFileHash(bytes20 _filehash) public view returns (uint) {
+    function checkFileHashExternal(bytes20 _filehash) external view returns (uint) {
         // we go through all the filehashes
         for (uint i = 0; i < fileHashes.length; i++) {
             // if the filehash's owner is equal to the owner
@@ -88,6 +88,19 @@ contract ClientManager is Ownable {
         }
         return 0; // filehash doesn't exist
     }
+
+    function checkFileHash(bytes20 _filehash) internal view returns (uint) {
+        //TODO: check internal mapping, no loops allowed
+        //@kerem can you check the rest of our functions that use loops and make sure we dont call them in any other functions?
+        
+        // //something like:
+        // return OwnerTofileHash[_filehash];
+        // //THIS FUNCTION IS UNFINISHED, must actually store things into the OwnerTofileHash mapping before trying to return it here
+        
+        //delete this temp return var once implemented
+        return 1;
+    }
+
 
     function _deleteFileHash(bytes20 _fileHash) public {
         // Checks if the fileHash exists
