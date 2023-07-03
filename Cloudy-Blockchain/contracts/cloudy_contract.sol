@@ -158,8 +158,14 @@ contract ClientManager is Ownable {
     }
 
     // Function to retrieve shard IDs by file hash
-    function getShardIDs(bytes20 fileHash) public view returns (uint[] memory) {
-        return  fileHashToShards[fileHash];
+    function getShardIDsExternal(bytes20 fileHash) external view returns (uint[] memory) {
+        //TODO: implement this using a big inefficient loop and no accessing of mappings
+        return fileHashToShards[fileHash];
+    }
+
+    // Function to retrieve shard IDs by file hash
+    function getShardIDs(bytes20 fileHash) internal view returns (uint[] memory) {
+        return fileHashToShards[fileHash];
     }
 
     // Function to get the total count of shards in a file
