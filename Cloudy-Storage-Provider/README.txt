@@ -13,8 +13,20 @@ CONTRACT_ADDRESS #address of remix local javascript deployed contract.
 MAX_STORAGE_IN_BYTES #max bytes of storage in that local directory you want to allow to be used for storage by external users.
 BLOCKCHAIN_ABI #The ABI of our blockchain interface.
 
-Create a virtual environment using "python -m venv venv"
-Enter the virtual environment using ".\venv\Scripts\activate"
+
+For Mac (may need to replace the word "python" with "python3"):
+If python isnt installed, run the following from the terminal: 
+brew update --verbose
+brew install python
+
+For All:
+Create a virtual environment using:
+python -m venv venv
+
+Enter the virtual environment using 
+(Windows) ".\venv\Scripts\activate"
+(Mac) "source venv/bin/activate"
+
 python -m pip install numpy
 python -m pip install flask
 python -m pip install werkzeug
@@ -29,10 +41,13 @@ Follow the one-click-setup instructions, then confirm in Server tab that its run
 In solidity "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider", and ensure port matches.
 
 Run the program locally for testing using the command:
+cd Cloudy-Storage-Provider 
 .\venv\Scripts\activate
+
+Deploy the File Storage Service:
 python CloudyStorageMain.py
 
-Interact with the running service by hitting the following endpoint with a POST containing the file you want to upload
+Interact with the running File Storage service as a file Owner by hitting the following endpoint with a POST containing the file you want to upload
 http://127.0.0.1:5000/upload
 
 
