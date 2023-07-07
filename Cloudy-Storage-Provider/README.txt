@@ -24,6 +24,7 @@ Create a virtual environment using:
 python -m venv venv
 
 Enter the virtual environment using 
+cd Cloudy-Storage-Provider 
 (Windows) ".\venv\Scripts\activate"
 (Mac) "source venv/bin/activate"
 
@@ -34,17 +35,10 @@ python -m pip install --upgrade setuptools
 python -m pip install python-dotenv
 python -m pip install web3
 
-Set up locally hosted blockchain for testing (later on we may deploy to a hosted testnet.)
-Download Ganache from https://www.trufflesuite.com/ganache
-yarn global add ganache
-Follow the one-click-setup instructions, then confirm in Server tab that its running locally on port http://localhost:7545/.
-In solidity "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider", and ensure port matches.
+Follow the README in Cloudy-Blockchain folder to set up a local version of our blockchain for testing.
 
-Run the program locally for testing using the command:
-cd Cloudy-Storage-Provider 
-.\venv\Scripts\activate
 
-Deploy the File Storage Service:
+Deploy the File Storage Service(Run the program locally for testing):
 python CloudyStorageMain.py
 
 Interact with the running File Storage service as a file Owner by hitting the following endpoint with a POST containing the file you want to upload
