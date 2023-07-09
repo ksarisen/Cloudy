@@ -4,19 +4,48 @@ import Navbar from '../Navbar/Navbar';
 
 
 export const Home = (props) => {
-    const[selectedFile, setSelectedFile] = useState('');
+    const[file, setFile] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
+    function handleFile(event){
+        if(typeof(event.target.files[0]) !== 'undefined' && event.target.files[0] != null){
+            setFile(event.target.files[0]);
+            console.log(event.target.files[0]);
+            console.log({file});
+        }else{
+            console.log("File Not Chosen");
+        }
+       
+       
     }
+
+    function handleUpload(){
+        const formData = new FormData()
+        formData.append('file', file)
+        fetch(
+            'url',
+            {
+                method: "POST",
+                body: formData
+            }
+        )
+        .then((response) => response.json())
+        .then(
+            (result) => {
+                console.log('success', result)
+            }
+        )
+        .catch(error =>{
+            console.error("Error:", error)
+        })
+    }
+
     return(
         // body
         <div>
              {/* top bar */}
              <Navbar/>
             <div>
-                <form className="upload-form" onSubmit={handleSubmit}>
+                <div className="upload-form">
                     <div className="flex-container">
                     <div className="flex-child">
                     <label className="greeting-labels">Nice to see you, Ouldooz!</label>
@@ -24,14 +53,18 @@ export const Home = (props) => {
                     <br/>
                     </div>
                     <div className="flex-child">
-                        <label className="upload-labels">Try to Upload a File:</label>
-                        <br/>
-                        <br/>
-                        <button className="button" type="submit">Upload</button>
+                        <form onSubmit={handleUpload}>
+                            <div className="upload-container">
+                            <label className="upload-labels">Try to Upload a File: &nbsp;</label> 
+                            <input className="file" type = "file" name="file" onChange={handleFile}/>
+                            </div>
+                            <br/>
+                            <button className="button" type="submit">Upload</button>
+                        </form>
                         {/* If we want to add anything to the right side of the uploads */}
                     </div>
                     </div>
-                </form>
+                </div>
                 <br/>
                 <br/>
                 <div className="table-container">
