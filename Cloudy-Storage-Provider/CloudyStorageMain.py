@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 app.debug = True
 
-# Initialize connection to smart contract instance using Alchemy as our provider
+# Initialize connection to smart contract instance using locally hosted Ganache as our provider
 web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_PROVIDER_URL'))) 
 contract_address = os.getenv('CONTRACT_ADDRESS')
 local_storage_path = os.getenv('LOCAL_STORAGE_PATH')
@@ -126,12 +126,15 @@ def count_storage_bytes_in_use():
     return total_size
 currently_used_bytes = count_storage_bytes_in_use()
 
-def is_space_available_to_store(nextShard)
-    if (currently_used_bytes + nextShard < )
+#TODO: finish the method
+# def is_space_available_to_store(nextShard):
+#     if (currently_used_bytes + nextShard < )
 
 @app.route('/audit', methods=['POST'])
 def audit_files():
     # Check if 'shards' key exists in the request JSON data
+    # if request.json  TODO: UNFINISHED CODE HERE PUSHED TO UNBLOCK JEN
+    
     if 'shards' not in request.json:
         return 'No shard IDs found in the request', 400
 
@@ -144,11 +147,6 @@ def audit_files():
         file_path = os.path.join(storage_path, shardID)
         if not os.path.exists(file_path):
             return 'Not all files are stored locally', 200
-
-
-
-
-
 
     # All files exist in the storage directory
     return 'All files are stored locally', 200

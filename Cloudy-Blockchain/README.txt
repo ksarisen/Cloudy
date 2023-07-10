@@ -15,8 +15,11 @@ Run the following commands:
 yarn global add ganache
 
 Open remix.ethereum.org, and clone our repository "https://github.com/ksarisen/Cloudy".
+You may need to set up a git personal access token, follow the instructions in Remix.
+In the "Solidity Compiler" tab, compile Cloudy-Blockchain/contracts/cloudy_contract.sol
 Select the "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider",
 Ensure the "Ganache JSON-RPC Endpoint" in the pop up dialog matches "http://localhost:7545/" .
+Click the orange Deploy button selecting cloudy_contract.sol
 
 
 This Cloudy-Blockchain workspace contains the following directories:
