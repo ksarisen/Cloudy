@@ -19,11 +19,13 @@ If python isnt installed, run the following from the terminal:
 brew update --verbose
 brew install python
 
-For All:
-Create a virtual environment using:
-python -m venv venv
+* The root is Cloudy-Storage-Provider 
 
-Enter the virtual environment using 
+For both Mac & Windows first-time set-up:
+Create a virtual environment using:
+"python -m venv venv" in the Cloudy-Storage-Provider directory
+
+Once first time setup is done, to re-enter the virtual environment, type:
 cd Cloudy-Storage-Provider 
 (Windows) ".\venv\Scripts\activate"
 (Mac) "source venv/bin/activate"
@@ -34,6 +36,8 @@ python -m pip install werkzeug
 python -m pip install --upgrade setuptools
 python -m pip install python-dotenv
 python -m pip install web3
+
+To exit venv type "deactivate"
 
 Follow the README in Cloudy-Blockchain folder to set up a local version of our blockchain for testing.
 
