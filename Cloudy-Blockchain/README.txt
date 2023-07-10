@@ -11,20 +11,16 @@ Open the Ganache application.
 Follow the one-click-setup instructions (Quickstart Ethereum)
 Confirm in its Server tab that Ganache's RPC Server is running locally on  "http://localhost:7545/" or "HTTP://127.0.0.1:7545".
 
-Run the following commands:
+Run the following command in command prompt/terminal:
 yarn global add ganache
 
 Open remix.ethereum.org, and clone our repository "https://github.com/ksarisen/Cloudy".
 You may need to set up a git personal access token, follow the instructions in Remix.
-In the "Solidity Compiler" tab, compile Cloudy-Blockchain/contracts/cloudy_contract.sol
-Select the "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider",
-Ensure the "Ganache JSON-RPC Endpoint" in the pop up dialog matches "http://localhost:7545/" .
-Click the orange Deploy button selecting cloudy_contract.sol
-
 In the file navigator on the left, open the file "Cloudy-Blockchain/contracts/cloudy_contract.sol"
 In the file navigator on the left, in the "Solidity Compiler" tab, Compile the file cloudy_contract.sol
 Select the "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider",
-Ensure the "Ganache JSON-RPC Endpoint" in the pop up dialog matches "http://localhost:7545" .
+Ensure the "Ganache JSON-RPC Endpoint" in the pop up dialog matches "http://localhost:7545/" .
+Click the orange Deploy button selecting cloudy_contract.sol
 
 
 This Cloudy-Blockchain workspace contains the following directories:
