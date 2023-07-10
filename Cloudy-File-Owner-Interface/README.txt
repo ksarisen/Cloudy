@@ -8,4 +8,9 @@ then display the name of each file alongside interactive "Download" and "Delete"
 will contact running instances of our Cloudy-Storage-Provider to retrieve or delete the shards belonging to the selected file.
 
 Instructions:
---> To run the application locally, please enter "npm start" into the terminal.
+--> To run the application locally, from the root folder Cloudy, please enter the following into a command prompt:
+cd .\Cloudy-File-Owner-Interface\cloudy-file-owner-interface-react-app\
+npm install
+npm start 
+
+thanks!

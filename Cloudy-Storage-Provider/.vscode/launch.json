@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "CloudyMain.py",
+                "FLASK_APP": "CloudyStorageMain.py",
                 "FLASK_DEBUG": "1"
             },
             "args": [
