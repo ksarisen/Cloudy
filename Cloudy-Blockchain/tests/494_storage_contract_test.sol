@@ -4,7 +4,7 @@ pragma solidity >=0.8.2 <0.9.0;
 
 import "remix_tests.sol"; 
 import "remix_accounts.sol";
-import "/contracts/cloudy_contract.sol";
+import "../contracts/cloudy_contract.sol";
 
 contract ClientManagerTest /*is ClientManager*/{
     ClientManager clientManager;

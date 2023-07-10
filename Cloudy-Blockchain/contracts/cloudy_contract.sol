@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity >=0.8.2 <0.9.0;
+pragma solidity >=0.8.2 <0.9.0; //0.8.2 should be min
 
 import "../.deps/ownable.sol";
 
@@ -41,6 +41,9 @@ contract ClientManager is Ownable {
     mapping (uint => uint) private shardIdtoFarmerNodeId;
     mapping(bytes20 => uint[]) fileHashToShards;
 
+    mapping (uint => uint) private farmerShardCount;
+    mapping (address => uint) public ownerFileCount;
+
     // mapping (uint => Farmer) public nodeIdToFarmer; //deprecated, instead use availableFarmers[farmerNodeIdToFarmerArrayIndex[nodeId]]
     
     // Mapping to store file hash owner's address
@@ -80,7 +83,7 @@ contract ClientManager is Ownable {
 
     function checkFileHashExternal(bytes20 _filehash) external view returns (uint) {
         // we go through all the filehashes
-        for (uint i = 0; i < fileHashes.length; i++) {
+        for (uint i = 0; i < fileHashes.length-1; i++) {
             // if the filehash's owner is equal to the owner
             if (fileHashes[i] == _filehash) {
                 return 1; //filehash found
@@ -158,8 +161,14 @@ contract ClientManager is Ownable {
     }
 
     // Function to retrieve shard IDs by file hash
-    function getShardIDs(bytes20 fileHash) public view returns (uint[] memory) {
-        return  fileHashToShards[fileHash];
+    function getShardIDsExternal(bytes20 fileHash) external view returns (uint[] memory) {
+        //TODO: implement this using a big inefficient loop and no accessing of mappings
+        return fileHashToShards[fileHash];
+    }
+
+    // Function to retrieve shard IDs by file hash
+    function getShardIDs(bytes20 fileHash) internal view returns (uint[] memory) {
+        return fileHashToShards[fileHash];
     }
 
     // Function to get the total count of shards in a file
@@ -179,9 +188,6 @@ contract ClientManager is Ownable {
     function hasConsent(bytes20 _fileHash, address caller) public view returns (bool) {
         return fileHashToOwner[_fileHash] == caller;
     }
-
-    mapping (uint => uint) private farmerShardCount;
-    mapping (address => uint) public ownerFileCount;
 
     //start of jennifer's code:
     mapping (bytes20 => uint) private shardsInFile_Count;
