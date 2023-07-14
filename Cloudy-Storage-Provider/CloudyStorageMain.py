@@ -22,6 +22,27 @@ max_stored_bytes = os.getenv('MAX_STORAGE_IN_BYTES')
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
+
+
+@app.before_first_request
+def set_blockchain_endpoint():
+    #NOTE this is untested!
+    storage_provider_ip = request.host.split(':')[0]
+    wallet_address = os.getenv('WALLET_ADDRESS')
+    available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
+
+    try:
+        response = cloudySmartContract.functions.addStorageProvider(storage_provider_ip, wallet_address, available_storage_bytes).call()
+        if response.status_code == 200:
+            print(f"Successfully Initialized storage provider at {storage_provider_ip}")
+        else:
+            print("Error: Unable to connect to Cloudy Blockchain")
+    except response.RequestException:
+        print("Error: Unable to connect to Cloudy Blockchain")
+
+
+
+
 # How to call a Cloudy contract function
 # result = cloudySmartContract.functions.function_name().call()
 
