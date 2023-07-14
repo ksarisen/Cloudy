@@ -7,7 +7,7 @@ contract DistributedStorage {
         string ownerName;
         string fileName;
         bytes32 fileHash;
-        uint256[] shardIds;
+        // uint256[] shardIds;
         bool exists;
     }
 
@@ -45,11 +45,12 @@ contract DistributedStorage {
 
     event ShardStored(uint256 shardId, address storageProvider);
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
-    event RewardPaid(address storageProvider, uint256 amount);
-    event FileDeleted(bytes32 fileHash);
     event ShardDeleted(uint256 shardId);
-    event StorageProviderAdded(address storageProvider);
-    event StorageProviderDeleted(address storageProvider);
+    event RewardPaid(address storageProvider, uint256 amount);
+    event FileUploaded(address indexed owner, bytes32 fileHash);
+    event FileDeleted(address indexed owner, bytes32 fileHash);
+    event StorageProviderAdded(address indexed storageProvider);
+    event StorageProviderDeleted(address indexed storageProvider);
 
     constructor() {
         shardCounter = 1;
@@ -79,47 +80,58 @@ contract DistributedStorage {
      * Keep in mind that large files may have gas limitations and require additional considerations. 
      * Additionally, it's essential to carefully assess the costs, security, and scalability aspects of storing large amounts of data on the blockchain.
      */
-    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, bytes memory _fileData, uint256 _shardSize) external {
-        require(_fileData.length > 0, "File data must be provided");
+    // function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, bytes memory _fileData, uint256 _shardSize) external {
+    //     require(_fileData.length > 0, "File data must be provided");
 
-        uint256 numShards = (uint256(_fileData.length) + _shardSize - 1) / _shardSize;
+    //     uint256 numShards = (uint256(_fileData.length) + _shardSize - 1) / _shardSize;
 
-        uint256[] memory shardIds = new uint256[](numShards);
+    //     uint256[] memory shardIds = new uint256[](numShards);
 
-        for (uint256 i = 0; i < numShards; i++) {
-            uint256 start = i * _shardSize;
-            uint256 end = start + _shardSize;
-            if (end > _fileData.length) {
-                end = _fileData.length;
-            }
+    //     for (uint256 i = 0; i < numShards; i++) {
+    //         uint256 start = i * _shardSize;
+    //         uint256 end = start + _shardSize;
+    //         if (end > _fileData.length) {
+    //             end = _fileData.length;
+    //         }
 
-            bytes memory shardData = new bytes(end - start);
+    //         bytes memory shardData = new bytes(end - start);
 
-            for (uint256 j = start; j < end; j++) {
-                shardData[j - start] = _fileData[j];
-            }
+    //         for (uint256 j = start; j < end; j++) {
+    //             shardData[j - start] = _fileData[j];
+    //         }
 
-            shardIds[i] = createShard(shardData, _fileHash, msg.sender);
-        }
+    //         shardIds[i] = createShard(shardData, _fileHash, msg.sender);
+    //     }
 
-        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
+    //     filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
 
+    //     ownerFiles[msg.sender].push(_fileHash);
+
+    //     shardCounter++;
+    // }
+
+    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash) external {
+        require(!doesFileExist(_fileHash), "File already exists");
+        require(bytes(_ownerName).length > 0, "Owner name must be provided");
+        require(bytes(_fileName).length > 0, "File name must be provided");
+
+        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, true);
         ownerFiles[msg.sender].push(_fileHash);
 
-        shardCounter++;
+        emit FileUploaded(msg.sender, _fileHash);
     }
 
-    function createShard(bytes memory _shardData, bytes32 _fileHash, address _storageProvider) internal returns (uint256)
-    {
-        uint256 shardId = shardCounter;
-        shards[shardId] = Shard(shardId, _storageProvider, block.timestamp, _shardData, _fileHash, true);
-        storageProviders[_storageProvider].push(shardId);
-        fileShards[_fileHash].push(shardId); // Update fileShards mapping
-        providerDetails[_storageProvider].storedShardIds.push(shardId); // Update storedShardIds
-        emit ShardStored(shardId, _storageProvider);
-        shardCounter++;
-        return shardId;
-    }
+    // function createShard(bytes memory _shardData, bytes32 _fileHash, address _storageProvider) internal returns (uint256)
+    // {
+    //     uint256 shardId = shardCounter;
+    //     shards[shardId] = Shard(shardId, _storageProvider, block.timestamp, _shardData, _fileHash, true);
+    //     storageProviders[_storageProvider].push(shardId);
+    //     fileShards[_fileHash].push(shardId); // Update fileShards mapping
+    //     providerDetails[_storageProvider].storedShardIds.push(shardId); // Update storedShardIds
+    //     emit ShardStored(shardId, _storageProvider);
+    //     shardCounter++;
+    //     return shardId;
+    // }
 
     function deleteFile(bytes32 _fileHash) external {
         require(filesByHash[_fileHash].exists, "File does not exist");
@@ -129,8 +141,7 @@ contract DistributedStorage {
         // Delete the file's shards from the fileShards mapping
         uint256[] storage fileShardIds = fileShards[_fileHash];
         for (uint256 i = 0; i < fileShardIds.length; i++) {
-            uint256 shardId = fileShardIds[i];
-            delete shards[shardId];
+            delete shards[fileShardIds[i]];
         }
         delete fileShards[_fileHash]; // Delete the mapping entry for the file
 
@@ -146,7 +157,7 @@ contract DistributedStorage {
         // Delete the file from the filesByHash mapping
         delete filesByHash[_fileHash];
 
-        emit FileDeleted(_fileHash);
+        emit FileDeleted(msg.sender, _fileHash);
     }
 
     // Function assigns a storage provider to a shard
@@ -160,7 +171,9 @@ contract DistributedStorage {
             uint256[] storage currentProviderShards = storageProviders[currentProvider];
             for (uint256 i = 0; i < currentProviderShards.length; i++) {
                 if (currentProviderShards[i] == _shardId) {
-                    delete currentProviderShards[i];
+                    currentProviderShards[i] = currentProviderShards[currentProviderShards.length - 1];
+                    currentProviderShards.pop();
+                    //delete currentProviderShards[i];
                     break;
                 }
             }
@@ -234,41 +247,63 @@ contract DistributedStorage {
         if (_isStoring) {
             providersStoring.push(_storageProvider);
         } else {
-            for (uint256 i = 0; i < providersStoring.length; i++) {
-                if (providersStoring[i] == _storageProvider) {
-                    providersStoring[i] = providersStoring[providersStoring.length - 1];
-                    providersStoring.pop();
-                    break;
-                }
-            }
+            removeProviderFromArray(providersStoring, _storageProvider);
+
+            // for (uint256 i = 0; i < providersStoring.length; i++) {
+            //     if (providersStoring[i] == _storageProvider) {
+            //         providersStoring[i] = providersStoring[providersStoring.length - 1];
+            //         providersStoring.pop();
+            //         break;
+            //     }
+            // }
         }
     }
 
     // Function enables updating the available storage space for a provider and automatically updates the providersWithSpace array based on the new available space value
     function updateAvailableStorageSpace(address _storageProvider, uint256 _newAvailableSpace) external {
         StorageProvider storage provider = providerDetails[_storageProvider];
+        uint256 oldAvailableSpace = provider.availableStorageSpace;
         provider.availableStorageSpace = _newAvailableSpace;
         
-        if (_newAvailableSpace > 0) {
-            bool providerFound = false;
+        // if (_newAvailableSpace > 0) {
+        //     bool providerFound = false;
             
-            for (uint256 i = 0; i < providersWithSpace.length; i++) {
-                if (providersWithSpace[i] == _storageProvider) {
-                    providerFound = true;
-                    break;
-                }
-            }
+        //     for (uint256 i = 0; i < providersWithSpace.length; i++) {
+        //         if (providersWithSpace[i] == _storageProvider) {
+        //             providerFound = true;
+        //             break;
+        //         }
+        //     }
             
-            if (!providerFound) {
-                providersWithSpace.push(_storageProvider);
-            }
-        } else {
-            for (uint256 i = 0; i < providersWithSpace.length; i++) {
-                if (providersWithSpace[i] == _storageProvider) {
-                    providersWithSpace[i] = providersWithSpace[providersWithSpace.length - 1];
-                    providersWithSpace.pop();
-                    break;
+        //     if (!providerFound) {
+        //         providersWithSpace.push(_storageProvider);
+        //     }
+        // } else {
+        //     for (uint256 i = 0; i < providersWithSpace.length; i++) {
+        //         if (providersWithSpace[i] == _storageProvider) {
+        //             providersWithSpace[i] = providersWithSpace[providersWithSpace.length - 1];
+        //             providersWithSpace.pop();
+        //             break;
+        //         }
+        //     }
+        // }
+
+        if (oldAvailableSpace == 0 && _newAvailableSpace > 0) {
+            providersWithSpace.push(_storageProvider);
+        } else if (oldAvailableSpace > 0 && _newAvailableSpace == 0) {
+            removeProviderFromArray(providersWithSpace, _storageProvider);
+        }
+    }
+
+    function removeProviderFromArray(address[] storage _array, address _provider) internal {
+        uint256 length = _array.length;
+        for (uint256 i = 0; i < length; i++) {
+            if (_array[i] == _provider) {
+                if (i < length - 1) {
+                    _array[i] = _array[length - 1];
                 }
+                _array.pop();
+                break;
             }
         }
     }  
@@ -284,7 +319,9 @@ contract DistributedStorage {
         uint256[] storage providerShards = storageProviders[storageProvider];
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
-                delete providerShards[i];
+                providerShards[i] = providerShards[providerShards.length - 1];
+                providerShards.pop();
+                //delete providerShards[i];
                 break;
             }
         }
@@ -293,7 +330,9 @@ contract DistributedStorage {
         uint256[] storage fileShardIds = fileShards[shardToDelete.fileHash];
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             if (fileShardIds[i] == _shardId) {
-                delete fileShardIds[i];
+                fileShardIds[i] = fileShardIds[fileShardIds.length - 1];
+                fileShardIds.pop();
+                //delete fileShardIds[i];
                 break;
             }
         }
@@ -329,7 +368,9 @@ contract DistributedStorage {
         uint256[] storage providerShards = storageProviders[storageProvider];
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
-                delete providerShards[i];
+                providerShards[i] = providerShards[providerShards.length - 1];
+                providerShards.pop();
+                //delete providerShards[i];
                 break;
             }
         }
@@ -348,14 +389,16 @@ contract DistributedStorage {
         // Remove the storage provider from the arrays
         for (uint256 i = 0; i < providersWithSpace.length; i++) {
             if (providersWithSpace[i] ==_storageProvider) {
-                delete providersWithSpace[i];
+                providersWithSpace[i] = providersWithSpace[providersWithSpace.length - 1];
+                providersWithSpace.pop();
                 break;
             }
         }
 
         for (uint256 i = 0; i < providersStoring.length; i++) {
             if (providersStoring[i] == _storageProvider) {
-                delete providersStoring[i];
+                providersStoring[i] = providersStoring[providersStoring.length - 1];
+                providersStoring.pop();
                 break;
             }
         }
@@ -369,9 +412,9 @@ contract DistributedStorage {
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
     
-    function getFileDetails(bytes32 _fileHash) external view returns (address, string memory, string memory, bytes32, uint256[] memory) {
+    function getFileDetails(bytes32 _fileHash) external view returns (address, string memory, string memory, bytes32) {
         File storage file = filesByHash[_fileHash];
-        return (file.owner, file.ownerName, file.fileName, file.fileHash, file.shardIds);
+        return (file.owner, file.ownerName, file.fileName, file.fileHash);
     }
     
     function getOwnerFiles(address _owner) external view returns (bytes32[] memory) {
