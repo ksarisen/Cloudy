@@ -23,8 +23,8 @@ contract DistributedStorage {
     struct StorageProvider {
         bytes32 ip;
         address walletAddress;
-        uint256 availableStorageSpace;
-        uint256 maximumStorageSize;
+        uint256 availableStorageSpace;  // Tracking in bytes
+        uint256 maximumStorageSize;     // Tracking in bytes
         bool isStoring;
         uint256[] storedShardIds;
     }
@@ -179,7 +179,7 @@ contract DistributedStorage {
             }
 
             // Assign the shard to the new provider
-            
+
             uint256[] storage newProviderShards = storageProviders[_storageProvider];
             require(newProviderShards.length + 1 <= providerDetails[_storageProvider].availableStorageSpace, "Storage provider does not have enough space for the shard");
 
