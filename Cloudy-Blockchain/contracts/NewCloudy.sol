@@ -179,8 +179,15 @@ contract DistributedStorage {
             }
 
             // Assign the shard to the new provider
+            
+            uint256[] storage newProviderShards = storageProviders[_storageProvider];
+            require(newProviderShards.length + 1 <= providerDetails[_storageProvider].availableStorageSpace, "Storage provider does not have enough space for the shard");
+
             shards[_shardId].storageProvider = _storageProvider;
-            storageProviders[_storageProvider].push(_shardId);
+            newProviderShards.push(_shardId);
+
+            // shards[_shardId].storageProvider = _storageProvider;
+            // storageProviders[_storageProvider].push(_shardId);
 
             emit ShardStored(_shardId, _storageProvider);
         }
