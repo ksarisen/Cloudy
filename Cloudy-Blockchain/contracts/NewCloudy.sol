@@ -436,4 +436,16 @@ contract DistributedStorage {
     function getProviderStoredShards(address _storageProvider) external view returns (uint256[] memory) {
         return providerDetails[_storageProvider].storedShardIds;
     }
+
+    function getStorageProvidersIPs() external view returns (bytes32[] memory) {
+        uint256 length = providersWithSpace.length;
+        bytes32[] memory ips = new bytes32[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            address providerAddress = providersWithSpace[i];
+            ips[i] = providerDetails[providerAddress].ip;
+        }
+        
+        return ips;
+    }
 }

@@ -14,6 +14,12 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
 						"indexed": false,
 						"internalType": "bytes32",
 						"name": "fileHash",
@@ -21,6 +27,25 @@
 					}
 				],
 				"name": "FileDeleted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "bytes32",
+						"name": "fileHash",
+						"type": "bytes32"
+					}
+				],
+				"name": "FileUploaded",
 				"type": "event"
 			},
 			{
@@ -103,7 +128,20 @@
 				"anonymous": false,
 				"inputs": [
 					{
-						"indexed": false,
+						"indexed": true,
+						"internalType": "address",
+						"name": "storageProvider",
+						"type": "address"
+					}
+				],
+				"name": "StorageProviderAdded",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
 						"internalType": "address",
 						"name": "storageProvider",
 						"type": "address"
@@ -129,6 +167,29 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "_ip",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "address",
+						"name": "_walletAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "_maximumStorageSize",
+						"type": "uint256"
+					}
+				],
+				"name": "addStorageProvider",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
@@ -191,11 +252,6 @@
 			{
 				"inputs": [
 					{
-						"internalType": "bytes32",
-						"name": "_fileHash",
-						"type": "bytes32"
-					},
-					{
 						"internalType": "uint256",
 						"name": "_shardId",
 						"type": "uint256"
@@ -222,9 +278,9 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
+						"internalType": "bytes32",
 						"name": "",
-						"type": "uint256"
+						"type": "bytes32"
 					},
 					{
 						"internalType": "uint256",
@@ -311,7 +367,21 @@
 						"internalType": "bytes32",
 						"name": "",
 						"type": "bytes32"
-					},
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "_fileHash",
+						"type": "bytes32"
+					}
+				],
+				"name": "getFilesShards",
+				"outputs": [
 					{
 						"internalType": "uint256[]",
 						"name": "",
@@ -343,12 +413,12 @@
 			{
 				"inputs": [
 					{
-						"internalType": "uint256",
-						"name": "_shardId",
-						"type": "uint256"
+						"internalType": "address",
+						"name": "_storageProvider",
+						"type": "address"
 					}
 				],
-				"name": "getShardFiles",
+				"name": "getProviderStoredShards",
 				"outputs": [
 					{
 						"internalType": "uint256[]",
@@ -526,34 +596,6 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "bytes32",
-						"name": "_ip",
-						"type": "bytes32"
-					},
-					{
-						"internalType": "address",
-						"name": "_walletAddress",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_availableStorageSpace",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_maximumStorageSize",
-						"type": "uint256"
-					}
-				],
-				"name": "registerStorageProvider",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
 				"inputs": [],
 				"name": "rewardAmount",
 				"outputs": [
@@ -608,6 +650,11 @@
 						"internalType": "bytes",
 						"name": "shardData",
 						"type": "bytes"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "fileHash",
+						"type": "bytes32"
 					},
 					{
 						"internalType": "bool",
@@ -689,16 +736,6 @@
 						"internalType": "bytes32",
 						"name": "_fileHash",
 						"type": "bytes32"
-					},
-					{
-						"internalType": "bytes",
-						"name": "_fileData",
-						"type": "bytes"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_shardSize",
-						"type": "uint256"
 					}
 				],
 				"name": "uploadFile",
@@ -735,11 +772,11 @@
 	},
 	"sources": {
 		"Cloudy-Blockchain/contracts/NewCloudy.sol": {
-			"keccak256": "0xf02d0f98eb6ec762350a5f99aff116c560279859e7fb9a7f60870f224f79bfe3",
+			"keccak256": "0x6c5621a95af81db8650615746b3c619128b099d514a26212e5a0c1c188249ba4",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6882c5c114c601fda1ce96f9c521a9ed48d0875d1012161bade5a314b23a6244",
-				"dweb:/ipfs/QmdgkqBSzDQTfz2PZ8szH8ENXGB5dgTjdHSFw9fBYHJEem"
+				"bzz-raw://2225b2bad345cc38876ac260b7fb2bb6bd75564ccb23252dfd8a6f33f38673e5",
+				"dweb:/ipfs/QmX3HH5gvnqhg5dkdtM7gdjYiUaXjBvw3y7iXvt3pdKtg6"
 			]
 		}
 	},
