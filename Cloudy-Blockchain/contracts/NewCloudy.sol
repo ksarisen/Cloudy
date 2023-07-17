@@ -445,6 +445,11 @@ contract DistributedStorage {
     // The function is used by the incentiveAuditor
     function getStorageProviderDataOfProvidersCurrentlyStoringShards() external view returns (StorageProvider[] memory) {
     uint256 providersCount = providersStoring.length;
+    if (providersCount == 0) {
+        // Return an empty array if there are no storage providers
+        return new StorageProvider[](0);
+    }
+
     StorageProvider[] memory providersData = new StorageProvider[](providersCount);
 
     for (uint256 i = 0; i < providersCount; i++) {

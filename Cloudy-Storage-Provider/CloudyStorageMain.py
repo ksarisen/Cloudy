@@ -1,5 +1,6 @@
 #Benjamin Djukastein, created in part via ChatGPT prompts
 import os
+import json
 from flask import Flask, abort, make_response, request, render_template, send_file
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -12,13 +13,23 @@ app = Flask(__name__)
 
 app.debug = True
 
+def get_ABI():
+    # Get path to contractabi.json
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    contractabi_filename = "contractabi.json"
+    contractabi_path = os.path.join(current_directory, contractabi_filename)
+
+    # Read the contents of contractabi.json as a Python dictionary
+    with open(contractabi_path, "r") as contractabi_file:
+        blockchain_ABI = json.load(contractabi_file)
+    return blockchain_ABI
+contract_abi = get_ABI()
+
 # Initialize connection to smart contract instance using locally hosted Ganache as our provider
-web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_PROVIDER_URL'))) 
+web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_URL'))) 
 contract_address = os.getenv('CONTRACT_ADDRESS')
 local_storage_path = os.getenv('LOCAL_STORAGE_PATH')
-contract_abi = os.getenv('BLOCKCHAIN_ABI')
 max_stored_bytes = os.getenv('MAX_STORAGE_IN_BYTES')
-
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
 

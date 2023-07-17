@@ -1,17 +1,35 @@
+import os
 import time
-import requests
 import random
+import json
+
+import requests
+from dotenv import load_dotenv
 from flask import Flask, make_response
+from web3 import Web3
+
+#load the local variables from .env file
+load_dotenv() 
 
 app = Flask(__name__)
 
-# Initialize connection to smart contract instance
-web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_PROVIDER_URL'))) 
-contract_address = os.getenv('CONTRACT_ADDRESS')
-local_storage_path = os.getenv('LOCAL_STORAGE_PATH')
-contract_abi = os.getenv('BLOCKCHAIN_ABI')
-max_stored_bytes = os.getenv('MAX_STORAGE_IN_BYTES')
+app.debug = True
 
+def get_ABI():
+    # Get path to contractabi.json
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    contractabi_filename = "contractabi.json"
+    contractabi_path = os.path.join(current_directory, contractabi_filename)
+
+    # Read the contents of contractabi.json as a Python dictionary
+    with open(contractabi_path, "r") as contractabi_file:
+        blockchain_ABI = json.load(contractabi_file)
+    return blockchain_ABI
+contract_abi = get_ABI()
+
+# Initialize connection to smart contract instance
+web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_URL'))) 
+contract_address = os.getenv('CONTRACT_ADDRESS')
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
@@ -42,17 +60,24 @@ def audit_storage_providers_loop():
             storageProvidersToAudit = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
             print("Storage providers to audit:", storageProvidersToAudit)
 
-            # Before selecting random shard IDs
-            print("Selecting random shard IDs to audit...")
-            shardIdsToAudit = selectRandomShardsToAudit(storageProvidersToAudit, 5)
-            print("Shard IDs to audit:", shardIdsToAudit)
+            if (storageProvidersToAudit.length > 0) :
+                # Before selecting random shard IDs
+                print("Selecting random shard IDs to audit...")
+                shardIdsToAudit = selectRandomShardsToAudit(storageProvidersToAudit, 5)
+                print("Shard IDs to audit:", shardIdsToAudit)
 
-            # Before auditing storage providers
-            print("Auditing storage providers...")
-            cloudySmartContract.functions.auditStorageProviders(shardIdsToAudit).call()
+                # Before auditing storage providers
+                print("Auditing storage providers...")
+                cloudySmartContract.functions.auditStorageProviders(shardIdsToAudit).call()
 
-            # After auditing storage providers (optional)
-            print("Audit complete.")
+                # After auditing storage providers (optional)
+                print("Audit complete.")
+            
+            else:
+                print("Blockchain has no files currently beign stored. No need to audit.")
+            
+
+            
             
         #     #Beyond here is ben's version that actually pings each storage provider.
         #     for storageProvider in storageProvidersToAudit:
