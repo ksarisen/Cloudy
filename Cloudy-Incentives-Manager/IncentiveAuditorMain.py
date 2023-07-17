@@ -60,7 +60,7 @@ def audit_storage_providers_loop():
             storageProvidersToAudit = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
             print("Storage providers to audit:", storageProvidersToAudit)
 
-            if (storageProvidersToAudit.length > 0) :
+            if len(storageProvidersToAudit) > 0:
                 # Before selecting random shard IDs
                 print("Selecting random shard IDs to audit...")
                 shardIdsToAudit = selectRandomShardsToAudit(storageProvidersToAudit, 5)
@@ -74,7 +74,7 @@ def audit_storage_providers_loop():
                 print("Audit complete.")
             
             else:
-                print("Blockchain has no files currently beign stored. No need to audit.")
+                print("Blockchain has no files currently being stored. No need to audit.")
             
 
             
