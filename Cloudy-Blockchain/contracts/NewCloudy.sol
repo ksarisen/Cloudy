@@ -7,7 +7,7 @@ contract DistributedStorage {
         string ownerName;
         string fileName;
         bytes32 fileHash;
-        // uint256[] shardIds;
+        uint256[] shardIds;
         bool exists;
     }
 
@@ -110,12 +110,12 @@ contract DistributedStorage {
     //     shardCounter++;
     // }
 
-    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash) external {
+    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds) external {
         require(!doesFileExist(_fileHash), "File already exists");
         require(bytes(_ownerName).length > 0, "Owner name must be provided");
         require(bytes(_fileName).length > 0, "File name must be provided");
 
-        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, true);
+        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, _shardIds, true);
         ownerFiles[msg.sender].push(_fileHash);
 
         emit FileUploaded(msg.sender, _fileHash);
