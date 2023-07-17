@@ -387,6 +387,7 @@ contract DistributedStorage {
 
     // Deletes a storage provider, provided it is not currently storing any shards.
     function deleteStorageProvider(address _storageProvider) external {
+        //TODO: improve security so random people cant just delete all our storage providers
         require(providerDetails[_storageProvider].isStoring, "Storage provider does not exist");
 
         // Remove the storage provider from the mappings
@@ -435,7 +436,24 @@ contract DistributedStorage {
     function getStorageProvidersWithSpace() external view returns (address[] memory) {
         return providersWithSpace;
     }
-    
+    //When would an external ever need the address of a struct that can only be accessed within solidity? we need the data inside the struct, not its address.
+    function getAddressesOfStorageProvidersStoring() external view returns (address[] memory) {
+        return providersStoring;
+    }
+
+    // Access the data of StorageProviders whose addresses are in providersStoring
+    // The function is used by the incentiveAuditor
+    function getStorageProviderDataOfProvidersCurrentlyStoringShards() external view returns (StorageProvider[] memory) {
+    uint256 providersCount = providersStoring.length;
+    StorageProvider[] memory providersData = new StorageProvider[](providersCount);
+
+    for (uint256 i = 0; i < providersCount; i++) {
+        address providerAddress = providersStoring[i];
+        providersData[i] = providerDetails[providerAddress]; //actually access the data stored in the associated StorageProvider struct
+    }
+    return providersData;
+}
+
     function getStorageProvidersStoring() external view returns (address[] memory) {
         return providersStoring;
     }
