@@ -432,9 +432,31 @@ contract DistributedStorage {
     function getFilesShards(bytes32 _fileHash) external view returns (uint256[] memory) {
         return fileShards[_fileHash];
     }
-    
-    function getStorageProvidersWithSpace() external view returns (address[] memory) {
-        return providersWithSpace;
+
+    struct StorageProviderDetails {
+        string ip;
+        address walletAddress;
+        uint256 availableStorageSpace;
+        uint256 maximumStorageSize;
+        bool isStoring;
+    }
+    function getStorageProvidersWithSpace() external view returns (StorageProviderDetails[] memory) {
+        uint256 length = providersWithSpace.length;
+        StorageProviderDetails[] memory providerDetailsArray = new StorageProviderDetails[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            address providerAddress = providersWithSpace[i];
+            StorageProvider memory provider = providerDetails[providerAddress];
+            providerDetailsArray[i] = StorageProviderDetails({
+                ip: provider.ip,
+                walletAddress: provider.walletAddress,
+                availableStorageSpace: provider.availableStorageSpace,
+                maximumStorageSize: provider.maximumStorageSize,
+                isStoring: provider.isStoring
+            });
+        }
+
+        return providerDetailsArray;
     }
     //When would an external ever need the address of a struct that can only be accessed within solidity? we need the data inside the struct, not its address.
     function getAddressesOfStorageProvidersStoring() external view returns (address[] memory) {

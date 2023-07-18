@@ -166,9 +166,9 @@
 	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "_ip",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "address",
@@ -443,9 +443,9 @@
 			{
 				"components": [
 					{
-						"internalType": "bytes32",
+						"internalType": "string",
 						"name": "ip",
-						"type": "bytes32"
+						"type": "string"
 					},
 					{
 						"internalType": "address",
@@ -492,9 +492,9 @@
 		"name": "getStorageProviderDetails",
 		"outputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "address",
@@ -525,9 +525,9 @@
 		"name": "getStorageProvidersIPs",
 		"outputs": [
 			{
-				"internalType": "bytes32[]",
+				"internalType": "string[]",
 				"name": "",
-				"type": "bytes32[]"
+				"type": "string[]"
 			}
 		],
 		"stateMutability": "view",
@@ -594,9 +594,9 @@
 		"name": "providerDetails",
 		"outputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "ip",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "address",

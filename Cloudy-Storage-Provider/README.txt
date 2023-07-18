@@ -34,11 +34,13 @@ cd Cloudy-Storage-Provider
 (Mac) "source venv/bin/activate"
 
 python -m pip install numpy
-python -m pip install flask
+python -m pip install Flask==2.2 #2.3 deprecates the app.before_first_request flag
 python -m pip install werkzeug
 python -m pip install --upgrade setuptools
 python -m pip install python-dotenv
 python -m pip install web3
+pip install flask-cors
+
 
 To exit venv type "deactivate"
 

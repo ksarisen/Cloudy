@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import './Home.css';
 import Navbar from '../Navbar/Navbar';
 import Web3 from 'web3';
-import contractAbi from './contractAbi.json';
+import contractAbi from '../../contractAbi.json';
 import CryptoJS from 'crypto-js';
 // import dotenv from 'dotenv';
 
@@ -24,9 +24,10 @@ export const Home = (props) => {
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
-    let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0xd11352a329d74A4C0bBdeF922855E96E7538F83C"// process.env.REMIX_CONTRACT_ADDRESS
+    let ganacheEndpoint = "http://localhost:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
+    let deployed_contract_address = "0x6f9Cb6502e2b4F6E846e244117F0C4E797f56322"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
+    console.log(contractAbi)//debugging Ben
     
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
 
@@ -154,32 +155,21 @@ export const Home = (props) => {
     //   }, []);
 
 
-
-    // split File Into Shards
-    function splitFile(file) {
-        console.log("Enter splitFile function")
-        const shardSize = 1024 * 1024; // 1MB shard size
-        const totalShards = Math.ceil(file.size / shardSize);
+    function splitFile(file, numSlices) {
+        const sliceSize = Math.ceil(file.size / numSlices);
         const shards = [];
-
-
-        // temporary shard code
-
-        shards.push(file);
-        
-
-        // let offset = 0;
-        // // splits the files into each shard
-        // // Note that shard are in the form of a blob when we console.log them
-        // for (let i = 0; i < totalShards; i++) {
-        //     const shard = file.slice(offset, offset + shardSize);
-        //     console.log(shard); 
-        //     shards.push(shard);
-        //     offset += shardSize;
-        // }
+      
+        let start = 0;
+        for (let i = 0; i < numSlices; i++) {
+          const end = Math.min(start + sliceSize, file.size);
+          const slice = file.slice(start, end);
+          shards.push(slice);
+          start += sliceSize;
+        }
+      
         console.log("Exit splitFile function")
         return shards;
-    }
+      }
 
 
     async function uploadFile(file) {
@@ -192,7 +182,7 @@ export const Home = (props) => {
 
         // Split file into shards
         // Do not split shards yet. Try to upload file as 1 shard / 1 file first and see if it works
-        const shards = splitFile(file);
+        const shards = splitFile(file,1); // TODO: decide if we want to split files into more than 1 big shard
     
         // Get the first account from Ganache
         const accounts = await web3.eth.getAccounts();
@@ -201,18 +191,35 @@ export const Home = (props) => {
         const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
         console.log("uploadFile function: checkpoint 1"); 
         // Get all storage Providers
-        const storageProviders = await cloudyContract.methods.getStorageProvidersWithSpace();
-        console.log("List of Storage Providers: " + storageProviders);
+        //TODO: update to use uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds)
+        const gasEstimateForUpload = await cloudyContract.methods.getStorageProvidersIPs().estimateGas({ from: sender });
 
+        // Convert the gas estimate to a regular JavaScript number
+        const gasEstimateNumber = Number(gasEstimateForUpload);
+
+        // Check if the gas estimate exceeds the maximum safe integer limit
+        const gasBuffer = gasEstimateNumber <= Number.MAX_SAFE_INTEGER
+        ? gasEstimateNumber + 100000
+        : Number.MAX_SAFE_INTEGER;
+
+        // Call the contract function and expect an array of addresses as the result
+        // getStorageProvidersWithSpace()
+        const storageProviders = await cloudyContract.methods.getStorageProvidersIPs().call({ from: sender,  gas: gasBuffer });
+
+        console.log("List of Storage Providers: ", storageProviders); // Assuming the function returns an array of addresses
+
+        if(storageProviders.length < 1){
+            throw new Error('No available Storage Providers.');
+        }
         
         // TODO: change blockchain code so that uploadFile function includes storage providers with no space and updates it
         const storageProvidersNoSpace = [];
         const storageProvidersWithSpace = [];
 
         // Loop through providers
-        for (let i = 0; i < storageProviders.size(); i++) {
+        for (let i = 0; i < storageProviders.length; i++) {
             // if(storageProviders[i].availableStorageSpace < 1024 * 1024){ // 1024 * 1024 = 1MB
-           if(storageProviders[i].availableStorageSpace < file.size()){ // 1024 * 1024 = 1MB
+           if(storageProviders[i].availableStorageSpace < file.length){ // 1024 * 1024 = 1MB
                 storageProvidersNoSpace.push(storageProviders[i]);
            }else{
                 storageProvidersWithSpace.push(storageProviders[i]);
@@ -227,19 +234,21 @@ export const Home = (props) => {
         // TODO: for each upload that doesn't work please make sure that it is going to be uploaded
         // TODO: make sure that successful upload checks that all the shards are uploaded first. since currently the logic is working for 1 file.
 
-        const successfulUpload = false;
+        let successfulUpload = false;
         const shardIDs = [];
-        for (let i = 0; i < shards.size(); i++) {
-            const storageProviderIndex = i;
-            if(i == storageProvidersWithSpace.size()){
-                storageProviderIndex = i % storageProvidersWithSpace.size();
+        for (let i = 0; i < shards.length; i++) {
+            let storageProviderIndex = i;
+            if(i == storageProvidersWithSpace.length){
+                storageProviderIndex = i % storageProvidersWithSpace.length;
             }
             const shardID = i;
             // const shardID = generateShardId(shards[i]);
-            const endpoint = `http://${storageProviders[storageProviderIndex]}:5002/upload`;
-            const formData = new FormData();
-                formData.append('shard', shards[i]);
-                formData.append('shardID', shardID);
+            const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
+            
+                const formData = new FormData();
+                shards.forEach((shard, index) => {
+                  formData.append(`shard_${index}`, shard);
+                });
 
                 fetch(endpoint, {
                     method: 'POST',
