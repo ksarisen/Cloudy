@@ -238,7 +238,7 @@ contract DistributedStorage {
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
     function addStorageProvider(bytes32 _ip, address _walletAddress, uint256 _maximumStorageSize) external {
-        require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
+        require(providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
         providersWithSpace.push(msg.sender);
@@ -432,9 +432,9 @@ contract DistributedStorage {
         return fileShards[_fileHash];
     }
     
-    function getStorageProvidersWithSpace() external view returns (address[] memory) {
-        return providersWithSpace;
-    }
+    // function getStorageProvidersWithSpace() external view returns (address[] memory) {
+    //     return providersWithSpace;
+    // }
     
     function getStorageProvidersStoring() external view returns (address[] memory) {
         return providersStoring;
@@ -454,5 +454,18 @@ contract DistributedStorage {
         }
         
         return ips;
+    }
+
+    // Function that returns an array of StorageProvider structs with available space
+    function getStorageProvidersWithSpace() external view returns (StorageProvider[] memory) {
+        uint256 length = providersWithSpace.length;
+        StorageProvider[] memory providers = new StorageProvider[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            address providerAddress = providersWithSpace[i];
+            providers[i] = providerDetails[providerAddress];
+        }
+
+        return providers;
     }
 }
