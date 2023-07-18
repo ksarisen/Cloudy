@@ -237,8 +237,8 @@ contract DistributedStorage {
     // If you need to update these values externally, you can change the visibility to external and add appropriate access control mechanisms to protect them.
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
-    function addStorageProvider(string _ip, address _walletAddress, uint256 _maximumStorageSize) external {
-        require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
+    function addStorageProvider(string memory _ip, address _walletAddress, uint256 _maximumStorageSize) external {
+        require(providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
         providersWithSpace.push(msg.sender);
@@ -415,7 +415,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (bytes32, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
@@ -467,9 +467,9 @@ contract DistributedStorage {
         return providerDetails[_storageProvider].storedShardIds;
     }
 
-    function getStorageProvidersIPs() external view returns (bytes32[] memory) {
+    function getStorageProvidersIPs() external view returns (string[] memory) {
         uint256 length = providersWithSpace.length;
-        bytes32[] memory ips = new bytes32[](length);
+        string[] memory ips = new string[](length);
         
         for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersWithSpace[i];
