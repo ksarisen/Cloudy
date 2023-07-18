@@ -8,10 +8,13 @@ make a folder where you want to code, and clone this repo there. Also, make a fo
 Create a file called ".env" containing the lines:
 
 LOCAL_STORAGE_PATH = "D:/path/to/where/you/want/to/store/files" with the actual path where you want to store the uploaded files.
-CONTRACT_PROVIDER_URL = "http://localhost:7545/" #Ganache localhost test network
+CONTRACT_URL = "http://localhost:7545/" #Ganache localhost test network
 CONTRACT_ADDRESS #address of remix local javascript deployed contract.
 MAX_STORAGE_IN_BYTES #max bytes of storage in that local directory you want to allow to be used for storage by external users.
-BLOCKCHAIN_ABI #The ABI of our blockchain interface.
+
+If you have modified and recompiled the blockchain contract, 
+    get the blockchain abi from remix by clicking the ABI button at the bottom of the Solidity Compiler tab and paste it in contractAbi.json
+
 
 
 For Mac (may need to replace the word "python" with "python3"):
