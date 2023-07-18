@@ -219,13 +219,17 @@ export const Home = (props) => {
            }
         }
 
-        const shardsToProviders = new Map();
+        // const shardsToProviders = new Map();
         
         // what happends if we have more shards than storage providers?
         // --> Loop over the storage providers again.
 
+        // TODO: for each upload that doesn't work please make sure that it is going to be uploaded
+        // TODO: make sure that successful upload checks that all the shards are uploaded first. since currently the logic is working for 1 file.
+
+        const successfulUpload = false;
+        const shardIDs = [];
         for (let i = 0; i < shards.size(); i++) {
-            const successfulUpload = false;
             const storageProviderIndex = i;
             if(i == storageProvidersWithSpace.size()){
                 storageProviderIndex = i % storageProvidersWithSpace.size();
@@ -244,9 +248,10 @@ export const Home = (props) => {
                     .then((response) => {
                       if (response.ok) {
                         console.log('Shards uploaded successfully');
-                        shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
-                        console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
+                        // shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
+                        console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);  
                         successfulUpload = true;
+                        shardIDs.push(shardID);
                       } else {
                         throw new Error('Failed to upload shards');
                       }
@@ -254,13 +259,13 @@ export const Home = (props) => {
                     .catch((error) => {
                       console.error('Error uploading shards:', error);
                     });
-                
-                if(successfulUpload){
-                    const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardsToProviders).send({ from: sender,  gas: 500000 });
-                    console.log("response to uploadFile(): " + response);
-                }     
+                          
          }
 
+         if(successfulUpload){
+            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender,  gas: 500000 });
+            console.log("response to uploadFile(): " + response);
+        }
         
 
 
