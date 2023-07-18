@@ -1,7 +1,7 @@
 #Benjamin Djukastein, created in part via ChatGPT prompts
 import os
 import json
-from flask import Flask, abort, make_response, request, render_template, send_file
+from flask import Flask, abort, make_response, request, render_template, send_file, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from web3 import Web3
@@ -30,6 +30,8 @@ web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_URL')))
 contract_address = os.getenv('CONTRACT_ADDRESS')
 local_storage_path = os.getenv('LOCAL_STORAGE_PATH')
 max_stored_bytes = os.getenv('MAX_STORAGE_IN_BYTES')
+wallet_address = os.getenv('WALLET_ADDRESS')
+available_storage_bytes = 0 # this value is set properly in set_blockchain_endpoint
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
@@ -37,9 +39,10 @@ cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_a
 
 @app.before_first_request
 def set_blockchain_endpoint():
+    global available_storage_bytes, wallet_address
     #NOTE this is untested!
     storage_provider_ip = request.host.split(':')[0]
-    wallet_address = os.getenv('WALLET_ADDRESS')
+    
     available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
 
     try:
@@ -68,42 +71,48 @@ def ensureContractDeployment():
 
 @app.route('/upload', methods=['POST'])
 def upload_shards():
+    global available_storage_bytes, wallet_address
     # Check if the 'shards' key exists in the request
     if 'shards' not in request.files:
         return 'No shards found in the request. Try POSTING again with your desired shard files sent under the key "shards".'
     
-    # Confirm tadding this shard will not exceed storage space
-    # Get the limit from the environment variable
-    # limit = int(os.getenv('DIRECTORY_LIMIT_BYTES'))
+    #Confirm adding this shard will not exceed storage space
+    total_bytes_uploading = 0
+    for file in request.files.values():
+        if file:
+            file_size = len(file.read())
+            total_bytes_uploading += file_size
 
-    # # Check the usage of the directory
-    # directory = '/path/to/directory'
-    # usage = get_directory_usage(directory)
+    if total_bytes_uploading <= available_storage_bytes:
+        print("Directory usage is within the limit.")
+        shards = request.files.getlist('shards')
 
-    # if usage <= limit:
-    #     print("Directory usage is within the limit.")
-    # else:
-    #     print("Directory usage exceeds the limit.")
+        for shard in shards:
+            # Check if a file was selected
+            if shard.filename == '':
+                return 'Cannot save nameless shards.'
+            # Save the file to the specified path
+            shard_name = secure_filename(shard.filename)
+            #use the raw path from .env file to prevent backslashes from being misinterpreted.
+            shard.save(r"{}/{}".format(os.getenv('LOCAL_STORAGE_PATH'), shard_name))
+            #update blockchain to track which storage provider is storing this shard
+            response = cloudySmartContract.functions.assignStorageProvider(shard.id, wallet_address).call()
+        
+            
 
+        response = make_response('Shards uploaded successfully')
+        response.status_code = 200
+
+        #update available storage space
+        available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
+        
+        return response
     
-    shards = request.files.getlist('shards')
+    else:
+        error_message = f'Not enough space to store the shards. Total bytes uploading: {total_bytes_uploading}, Available storage bytes: {available_storage_bytes}'
+        print(error_message)
+        return jsonify({'error': error_message}), 507 #507 means Insufficient Storage
 
-    for shard in shards:
-        # Check if a file was selected
-        if shard.filename == '':
-            return 'Cannot save nameless shards.'
-        # Save the file to the specified path
-        shard_name = secure_filename(shard.filename)
-        #use the raw path from .env file to prevent backslashes from being misinterpreted.
-        shard.save(r"{}/{}".format(os.getenv('LOCAL_STORAGE_PATH'), shard_name))
-
-    # Create a response with a custom message
-    response = make_response('Shards uploaded successfully')
-
-    # Set the status code to 200
-    response.status_code = 200
-
-    return response
 
 @app.route('/download/<shardname>', methods=['GET'])
 def download_shard(shardname):
