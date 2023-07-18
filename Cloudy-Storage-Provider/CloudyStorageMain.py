@@ -34,10 +34,14 @@ wallet_address = os.getenv('WALLET_ADDRESS')
 available_storage_bytes = 0 # this value is set properly in set_blockchain_endpoint
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
+app._got_first_request = False
 
+@app.before_request
+def run_setup_once():
+    if not app._got_first_request:
+        set_blockchain_endpoint()
+        app._got_first_request = True
 
-
-@app.before_first_request
 def set_blockchain_endpoint():
     global available_storage_bytes, wallet_address
     #NOTE this is untested!

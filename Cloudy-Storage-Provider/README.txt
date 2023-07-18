@@ -49,7 +49,7 @@ Deploy the File Storage Service(Run the program locally for testing):
 python CloudyStorageMain.py
 
 Interact with the running File Storage service as a file Owner by hitting the following endpoint with a POST containing the file you want to upload
-http://127.0.0.1:5000/upload
+http://127.0.0.1:5002/upload
 
 
 TODOS:

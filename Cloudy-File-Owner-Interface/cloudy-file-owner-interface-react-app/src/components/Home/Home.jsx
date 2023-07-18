@@ -236,7 +236,7 @@ export const Home = (props) => {
             }
             const shardID = i;
             // const shardID = generateShardId(shards[i]);
-            const endpoint = `http://${storageProviders[storageProviderIndex]}:5000/upload`;
+            const endpoint = `http://${storageProviders[storageProviderIndex]}:5002/upload`;
             const formData = new FormData();
                 formData.append('shard', shards[i]);
                 formData.append('shardID', shardID);
