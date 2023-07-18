@@ -55,6 +55,45 @@ contract DistributedStorage {
     constructor() {
         shardCounter = 1;
         rewardAmount = 1 ether; // Set the initial reward amount
+
+
+
+        // Add dummy storage providers
+        providerDetails[address(0x123)] = StorageProvider("192.168.0.1", address(0x123), 10, 10, true, new uint256[](0));
+        providerDetails[address(0x456)] = StorageProvider("192.168.0.2", address(0x456), 5, 5, true, new uint256[](0));
+        providerDetails[address(0x789)] = StorageProvider("192.168.0.3", address(0x789), 8, 8, true, new uint256[](0));
+
+        providersWithSpace.push(address(0x123));
+        providersWithSpace.push(address(0x456));
+        providersWithSpace.push(address(0x789));
+
+        providersStoring.push(address(0x123));
+        providersStoring.push(address(0x456));
+        providersStoring.push(address(0x789));
+
+        // Add dummy files
+        bytes32 fileHash1 = bytes32("filehash1");
+        ownerFiles[address(0xabc)].push(fileHash1);
+        filesByHash[fileHash1] = File(address(0xabc), "Alice", "file1.txt", fileHash1, new uint256[](0), true);
+
+        bytes32 fileHash2 = bytes32("filehash2");
+        ownerFiles[address(0xdef)].push(fileHash2);
+        filesByHash[fileHash2] = File(address(0xdef), "Bob", "file2.txt", fileHash2, new uint256[](0), true);
+
+        // Add dummy shards
+        shards[1] = Shard(1, address(0x123), block.timestamp, "", fileHash1, true);
+        shards[2] = Shard(2, address(0x123), block.timestamp, "", fileHash1, true);
+        shards[3] = Shard(3, address(0x456), block.timestamp, "", fileHash2, true);
+        shards[4] = Shard(4, address(0x456), block.timestamp, "", fileHash2, true);
+        shards[5] = Shard(5, address(0x789), block.timestamp, "", fileHash2, true);
+
+        storageProviders[address(0x123)].push(1);
+        storageProviders[address(0x123)].push(2);
+
+        storageProviders[address(0x456)].push(3);
+        storageProviders[address(0x456)].push(4);
+
+        storageProviders[address(0x789)].push(5);
     }
 
     // Function allows users to upload a file by providing its hash
@@ -238,7 +277,7 @@ contract DistributedStorage {
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
     function addStorageProvider(bytes32 _ip, address _walletAddress, uint256 _maximumStorageSize) external {
-        require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
+        require(providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
         providersWithSpace.push(msg.sender);
