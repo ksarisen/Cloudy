@@ -110,8 +110,22 @@ def audit_storage_providers_loop():
 
         except requests.RequestException as e:
             print('Error occurred during StorageProvider audit:', e)
+        randomAuditInterval = random_seconds()
+        print("Now waiting for " +randomAuditInterval+ " seconds...")
+        time.sleep(randomAuditInterval)  # Sleep for 5 minutes (300 seconds)
+        print('Error occurred during StorageProvider audit:', e)
 
-        time.sleep(300)  # Sleep for 5 minutes (300 seconds)
+def random_seconds():
+    # Determine the maximum number of intervals (15 seconds each) up to 500 seconds
+    max_intervals = 500 // 15
+    
+    # Pick a random number of intervals
+    num_intervals = random.randint(1, max_intervals)
+    
+    # Calculate the total number of seconds
+    total_seconds = num_intervals * 15
+    
+    return total_seconds
 
 def selectRandomShardsToAudit(storageProviders, numShards):
      # Combine all storedShardIds from all storage providers into a single list
