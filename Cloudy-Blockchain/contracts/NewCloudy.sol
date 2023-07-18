@@ -21,7 +21,7 @@ contract DistributedStorage {
     }
     
     struct StorageProvider {
-        bytes32 ip;
+        string ip;
         address walletAddress;
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
@@ -237,7 +237,7 @@ contract DistributedStorage {
     // If you need to update these values externally, you can change the visibility to external and add appropriate access control mechanisms to protect them.
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
-    function addStorageProvider(bytes32 _ip, address _walletAddress, uint256 _maximumStorageSize) external {
+    function addStorageProvider(string _ip, address _walletAddress, uint256 _maximumStorageSize) external {
         require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
