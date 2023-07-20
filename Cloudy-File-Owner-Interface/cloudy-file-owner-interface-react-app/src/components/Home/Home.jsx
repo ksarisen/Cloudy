@@ -24,12 +24,14 @@ export const Home = (props) => {
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
-    let ganacheEndpoint = "http://localhost:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
+    let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
     let deployed_contract_address = "0x6f9Cb6502e2b4F6E846e244117F0C4E797f56322"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
     console.log(contractAbi)//debugging Ben
     
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
+    
+    const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
 
     // Use the web3 instance in your code
     async function checkHosting() {
@@ -188,7 +190,6 @@ export const Home = (props) => {
         const accounts = await web3.eth.getAccounts();
         const sender = accounts[0];
 
-        const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
         console.log("uploadFile function: checkpoint 1"); 
         // Get all storage Providers
         //TODO: update to use uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds)
