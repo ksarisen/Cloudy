@@ -248,6 +248,7 @@ export const Home = (props) => {
             
             const formData = new FormData();
             shards.forEach((shard, index) => {
+                //TODO: ensure fileName isnt just "blob"
               formData.append(`shard_${index}`, shard);
             });
     
