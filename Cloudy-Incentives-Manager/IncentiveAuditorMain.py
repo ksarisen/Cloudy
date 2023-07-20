@@ -69,6 +69,7 @@ def audit_storage_providers_loop():
                 # Before auditing storage providers
                 print("Auditing storage providers...")
                 cloudySmartContract.functions.auditStorageProviders(shardIdsToAudit).call()
+                #TODO: confirm the audit removes from the storageProviders list when no longer available
 
                 # After auditing storage providers (optional)
                 print("Audit complete.")

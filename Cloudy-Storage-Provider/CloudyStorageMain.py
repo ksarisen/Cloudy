@@ -25,7 +25,7 @@ def get_ABI():
 contract_abi = get_ABI()
 
 # Initialize connection to smart contract instance using locally hosted Ganache as our provider
-web3 = Web3(Web3.HTTPProvider('http://localhost:7545'))
+web3 = Web3(Web3.HTTPProvider("http://localhost:7545"))
 
 #web3 = Web3(Web3.HTTPProvider(os.getenv('CONTRACT_URL'))) 
 contract_address = os.getenv('CONTRACT_ADDRESS')
@@ -100,12 +100,11 @@ def count_storage_bytes_in_use():
     return total_size
 currently_used_bytes = count_storage_bytes_in_use()
 
-
 if __name__ == '__main__':
     # Run the other functions first
     set_blockchain_endpoint()
 
     # Start the Flask server
-    CloudyStorageFlaskServer.app.run(debug=True, port=5002)
+    CloudyStorageFlaskServer.app.run(port=5002) #/*debug=True,*/ 
 
     

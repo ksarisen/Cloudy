@@ -20,7 +20,7 @@ import CryptoJS from 'crypto-js';
 // dotenv.config(); // Load environment variables from .env file
 
 export const Home = (props) => {
-    const[file, setFile] = useState('');
+    const [file, setFile] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
@@ -28,29 +28,29 @@ export const Home = (props) => {
     let deployed_contract_address = "0x6f9Cb6502e2b4F6E846e244117F0C4E797f56322"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
     console.log(contractAbi)//debugging Ben
-    
+
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
-    
+
     const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
 
     // Use the web3 instance in your code
     async function checkHosting() {
-    const accounts = await web3.eth.getAccounts();
-    const accountAddress = accounts[0]; // Assuming you want to check the first account
+        const accounts = await web3.eth.getAccounts();
+        const accountAddress = accounts[0]; // Assuming you want to check the first account
 
-    //process.env.CONTRACT_ADDRESS 
-    // Check if the Ganache instance is hosting your contract
-    const isHosting = await web3.eth.getCode(deployed_contract_address) !== '0x';
+        //process.env.CONTRACT_ADDRESS 
+        // Check if the Ganache instance is hosting your contract
+        const isHosting = await web3.eth.getCode(deployed_contract_address) !== '0x';
 
-    console.log(`Is Ganache hosting your contract? ${isHosting}`);
+        console.log(`Is Ganache hosting your contract? ${isHosting}`);
     }
 
-    function handleFile(event){
-        if(typeof(event.target.files[0]) !== 'undefined' && event.target.files[0] != null){
+    function handleFile(event) {
+        if (typeof (event.target.files[0]) !== 'undefined' && event.target.files[0] != null) {
             setFile(event.target.files[0]);
             console.log(event.target.files[0]);
-            console.log({file});
-        }else{
+            console.log({ file });
+        } else {
             setFile(null);
             console.log("File Not Chosen");
         }
@@ -61,25 +61,25 @@ export const Home = (props) => {
     async function stringToBytes20(inputString) {
         const encoder = new TextEncoder();
         const data = encoder.encode(inputString);
-      
+
         const hashBuffer = await crypto.subtle.digest('SHA-1', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-      
+
         const desiredLength = 20;
-      
+
         if (hashArray.length < desiredLength) {
-          const padding = Array(desiredLength - hashArray.length).fill(0);
-          hashArray.push(...padding);
+            const padding = Array(desiredLength - hashArray.length).fill(0);
+            hashArray.push(...padding);
         } else {
-          hashArray.splice(desiredLength);
+            hashArray.splice(desiredLength);
         }
-      
+
         const bytes20Hash = '0x' + hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
         return bytes20Hash;
-      }
+    }
 
 
-      function handleUpload(event){
+    function handleUpload(event) {
         event.preventDefault();
         checkHosting(); // confirm the blockchain is connected, for debugging only.
         uploadFile(file);
@@ -133,11 +133,11 @@ export const Home = (props) => {
     //       // Get the first account from Ganache
     //       const accounts = await web3.eth.getAccounts();
     //       const sender = accounts[0];
-    
+
     //       // Fetch the uploaded files from the blockchain
     //       const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
     //       const fileCount = await cloudyContract.methods.getFileCount().call({ from: sender });
-    
+
     //       const files = [];
     //       for (let i = 0; i < fileCount; i++) {
     //         const fileHash = await cloudyContract.methods.getFileHash(i).call({ from: sender });
@@ -145,13 +145,13 @@ export const Home = (props) => {
     //         const fileUploadDate = await cloudyContract.methods.getFileUploadDate(fileHash).call({ from: sender });
     //         files.push({ fileHash, fileName, fileUploadDate });
     //       }
-    
+
     //       setUploadedFiles(files);
     //     } catch (error) {
     //       console.error('Failed to fetch uploaded files:', error);
     //     }
     //   }
-    
+
     //   useEffect(() => {
     //     fetchUploadedFiles();
     //   }, []);
@@ -160,23 +160,23 @@ export const Home = (props) => {
     function splitFile(file, numSlices) {
         const sliceSize = Math.ceil(file.size / numSlices);
         const shards = [];
-      
+
         let start = 0;
         for (let i = 0; i < numSlices; i++) {
-          const end = Math.min(start + sliceSize, file.size);
-          const slice = file.slice(start, end);
-          shards.push(slice);
-          start += sliceSize;
+            const end = Math.min(start + sliceSize, file.size);
+            const slice = file.slice(start, end);
+            shards.push(slice);
+            start += sliceSize;
         }
-      
+
         console.log("Exit splitFile function")
         return shards;
-      }
+    }
 
 
     async function uploadFile(file) {
-    try {
-        const fileName = file.name;
+        try {
+            const fileName = file.name;
         // TODO: Please change the way we hash stringToBytes20  
         const _filehash = await stringToBytes20(fileName);
 
@@ -234,53 +234,53 @@ export const Home = (props) => {
 
         // TODO: for each upload that doesn't work please make sure that it is going to be uploaded
         // TODO: make sure that successful upload checks that all the shards are uploaded first. since currently the logic is working for 1 file.
-
-        let successfulUpload = false;
-        const shardIDs = [];
-        for (let i = 0; i < shards.length; i++) {
-            let storageProviderIndex = i;
-            if(i == storageProvidersWithSpace.length){
-                storageProviderIndex = i % storageProvidersWithSpace.length;
-            }
-            const shardID = i;
-            // const shardID = generateShardId(shards[i]);
+    
+            let successfulUpload = false;
+            const shardIDs = [];
+            for (let i = 0; i < shards.length; i++) {
+                let storageProviderIndex = i;
+                if (i == storageProvidersWithSpace.length) {
+                    storageProviderIndex = i % storageProvidersWithSpace.length;
+                }
+                const shardID = i;
+                // const shardID = generateShardId(shards[i]);
             const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
             
-                const formData = new FormData();
-                shards.forEach((shard, index) => {
-                  formData.append(`shard_${index}`, shard);
-                });
-
-                fetch(endpoint, {
-                    method: 'POST',
-                    body: formData,
-                  })
-                    .then((response) => {
-                      if (response.ok) {
-                        console.log('Shards uploaded successfully');
+            const formData = new FormData();
+            shards.forEach((shard, index) => {
+              formData.append(`shard_${index}`, shard);
+            });
+    
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData,
+                    });
+    
+                    if (response.ok) {
+                        console.log('Shard uploaded successfully');
                         // shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
-                        console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);  
+                        console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
                         successfulUpload = true;
                         shardIDs.push(shardID);
-                      } else {
-                        throw new Error('Failed to upload shards');
-                      }
-                    })
-                    .catch((error) => {
-                      console.error('Error uploading shards:', error);
-                    });
-                          
-         }
-
-         if(successfulUpload){
-            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender,  gas: 500000 });
-            console.log("response to uploadFile(): " + response);
-        }
-        
-
-
-
-        // const response = await cloudyContract.methods._storeFile(_filehash).send({ from: sender,  gas: 500000 });
+                    } else {
+                        throw new Error('Failed to upload shard');
+                    }
+    
+                    // Log the response content
+                    const data = await response.text();
+                    console.log('Response:', data);
+                } catch (error) {
+                    console.error('Error uploading shard:', error);
+                }
+            }
+    
+            if (successfulUpload) {
+                const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender, gas: 500000 });
+                console.log("response to uploadFile():", response);
+            }
+    
+            // const response = await cloudyContract.methods._storeFile(_filehash).send({ from: sender,  gas: 500000 });
         // console.log("response: " + response);
 
         // Send a transaction to the blockchain
@@ -308,11 +308,10 @@ export const Home = (props) => {
     
         //console.log("File: "+ fileName +"With Hash: " +_filehash+ "uploaded to the blockchain.");
         //fetchUploadedFiles();
-    } catch (error) {
-        console.error('Failed to upload file:', error);
+        } catch (error) {
+            console.error('Failed to upload file:', error);
+        }
     }
-
-    
     // function generateShardId(shard) {
     //     const hash = crypto.createHash('sha256');
     //     hash.update(shard);
@@ -321,70 +320,62 @@ export const Home = (props) => {
     // }
 
 
-
-
-    }
-
-      
-
-
-
-    return(
+    return (
         // body
         <div>
-             {/* top bar */}
-             <Navbar/>
+            {/* top bar */}
+            <Navbar />
             <div>
                 <div className="upload-form">
                     <div className="flex-container">
-                    <div className="flex-child">
-                    <label className="greeting-labels">Nice to see you, Ouldooz!</label>
-                    <br/>
-                    <br/>
-                    </div>
-                    <div className="flex-child">
-                    <form>
-                    <div className="upload-container">
-                        <label className="upload-labels">Try to Upload a File: &nbsp;</label> 
-                        <input className="file" type="file" name="file" onChange={handleFile} />
-                    </div>
-                    <br />
-                    <button className="button" type="submit" onClick={handleUpload}>Upload</button>
-                    </form>
-                        {/* If we want to add anything to the right side of the uploads */}
-                    </div>
+                        <div className="flex-child">
+                            <label className="greeting-labels">Nice to see you, Ouldooz!</label>
+                            <br />
+                            <br />
+                        </div>
+                        <div className="flex-child">
+                            <form>
+                                <div className="upload-container">
+                                    <label className="upload-labels">Try to Upload a File: &nbsp;</label>
+                                    <input className="file" type="file" name="file" onChange={handleFile} />
+                                </div>
+                                <br />
+                                <button className="button" type="submit" onClick={handleUpload}>Upload</button>
+                            </form>
+                            {/* If we want to add anything to the right side of the uploads */}
+                        </div>
                     </div>
                 </div>
-                <br/>
-                <br/>
+                <br />
+                <br />
                 <div className="table-container">
                     <table className="search-table">
-                    <tbody>    
-                        <tr>
-                            <th>File Name</th>
-                            {/* <th>Date Uploaded</th> */}
-                            <th>Download</th>
-                            <th>Delete</th>
-                        </tr>
-                        {uploadedFiles.map((file) => (
-                            <tr key={file.fileHash}>
-                            <td className="filename">{file.fileName}</td>
-                            {/* <td>{file.fileUploadDate}</td> */}
-                            <td>
-                                <a className='download-button'>
-                                {/* <a className='download-button' onClick={() => handleDownload(file.fileHash, encryptionKey)}> */}
-                                Download
-                                </a>
-                            </td>
-                            <td>
-                                <a className='delete-button'>
-                                {/* <a className='delete-button' onClick={() => handleDelete(file.fileHash)}> */}
-                                Delete
-                                </a>
-                            </td>
+                        <tbody>
+                            <tr>
+                                <th>File Name</th>
+                                {/* <th>Date Uploaded</th> */}
+                                <th>Download</th>
+                                <th>Delete</th>
                             </tr>
-                        ))}
-                    </tbody>
+                            {uploadedFiles.map((file) => (
+                                <tr key={file.fileHash}>
+                                    <td className="filename">{file.fileName}</td>
+                                    {/* <td>{file.fileUploadDate}</td> */}
+                                    <td>
+                                        <a className='download-button'>
+                                            {/* <a className='download-button' onClick={() => handleDownload(file.fileHash, encryptionKey)}> */}
+                                            Download
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a className='delete-button'>
+                                            {/* <a className='delete-button' onClick={() => handleDelete(file.fileHash)}> */}
+                                            Delete
+                                        </a>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
                     </table>
                 </div>
             </div>
