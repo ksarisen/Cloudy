@@ -49,7 +49,6 @@ contract DistributedStorage {
     event ShardDeleted(uint256 shardId);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
-    event ShardDeleted(uint256 shardId);
     event StorageProviderAdded(address indexed storageProvider);
     event StorageProviderDeleted(address indexed storageProvider);
 
@@ -423,7 +422,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (bytes32, address, uint256, uint256, bool) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
@@ -491,9 +490,9 @@ contract DistributedStorage {
         return providerDetails[_storageProvider].storedShardIds;
     }
 
-    function getStorageProvidersIPs() external view returns (string[] memory) {
+    function getStorageProvidersIPs() external view returns (bytes32[] memory) {
         uint256 length = providersWithSpace.length;
-        string[] memory ips = new string[](length);
+        bytes32[] memory ips = new bytes32[](length);
         
         for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersWithSpace[i];
