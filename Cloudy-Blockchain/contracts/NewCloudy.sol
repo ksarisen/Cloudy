@@ -433,26 +433,20 @@ contract DistributedStorage {
         return fileShards[_fileHash];
     }
 
-    struct StorageProviderDetails {
-        string ip;
-        address walletAddress;
-        uint256 availableStorageSpace;
-        uint256 maximumStorageSize;
-        bool isStoring;
-    }
-    function getStorageProvidersWithSpace() external view returns (StorageProviderDetails[] memory) {
+    function getStorageProvidersWithSpace() external view returns (StorageProvider[] memory) {
         uint256 length = providersWithSpace.length;
-        StorageProviderDetails[] memory providerDetailsArray = new StorageProviderDetails[](length);
+        StorageProvider[] memory providerDetailsArray = new StorageProvider[](length);
 
         for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersWithSpace[i];
             StorageProvider memory provider = providerDetails[providerAddress];
-            providerDetailsArray[i] = StorageProviderDetails({
+            providerDetailsArray[i] = StorageProvider({
                 ip: provider.ip,
                 walletAddress: provider.walletAddress,
                 availableStorageSpace: provider.availableStorageSpace,
                 maximumStorageSize: provider.maximumStorageSize,
-                isStoring: provider.isStoring
+                isStoring: provider.isStoring,
+                storedShardIds: provider.storedShardIds
             });
         }
 
