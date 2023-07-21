@@ -48,7 +48,8 @@ def set_blockchain_endpoint():
     print("pog")
     global available_storage_bytes, wallet_address
     #NOTE this is untested!
-    storage_provider_ip = request.host.split(':')[0]
+    storage_provider_ip = request.host.split(':')[0] #e.g. 127.0.0.1
+    #storage_provider_ip = ip_to_hex(storage_provider_ip) # e.g. 0x000000000000000000000000000000000000000000000000000000007f000001
     
     available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
 
@@ -79,21 +80,21 @@ def ensureContractDeployment():
 def upload_shards():
     global available_storage_bytes, wallet_address
     # Check if the 'shards' key exists in the request
-    if 'shards' not in request.files:
+    if len(request.files) < 1:
         return 'No shards found in the request. Try POSTING again with your desired shard files sent under the key "shards".'
     
     #Confirm adding this shard will not exceed storage space
     total_bytes_uploading = 0
-    for file in request.files.values():
-        if file:
-            file_size = len(file.read())
-            total_bytes_uploading += file_size
+    for shard in request.files.values():
+        if shard:
+            shard_size = len(shard.read())
+            total_bytes_uploading += shard_size
 
     if total_bytes_uploading <= available_storage_bytes:
         print("Directory usage is within the limit.")
-        shards = request.files.getlist('shards')
+        shards = request.files
 
-        for shard in shards:
+        for shard in request.files.values():
             # Check if a file was selected
             if shard.filename == '':
                 return 'Cannot save nameless shards.'
@@ -102,6 +103,7 @@ def upload_shards():
             #use the raw path from .env file to prevent backslashes from being misinterpreted.
             shard.save(r"{}/{}".format(os.getenv('LOCAL_STORAGE_PATH'), shard_name))
             #update blockchain to track which storage provider is storing this shard
+            #TODO: get id from shard/sent file blob.
             response = cloudySmartContract.functions.assignStorageProvider(shard.id, wallet_address).call()
             #TODO: check if storageProvider is now full. if so, take it off the blockchain list of availableProviders
             
@@ -155,6 +157,70 @@ def home():
 
 #Helper methods
 
+def ip_to_hex(ip_address):
+    try:
+        # Convert the IP address from string to bytes
+        ip_bytes = socket.inet_aton(ip_address)
+
+        # Convert the bytes to hexadecimal representation
+        hex_representation = binascii.hexlify(ip_bytes).decode()
+
+        # Ensure the hexadecimal representation is 64 characters long
+        # If it's shorter, pad it with leading zeros
+        hex_representation = hex_representation.zfill(64)
+
+        # Add the "0x" prefix to indicate it's a hexadecimal value
+        hex_representation = "0x" + hex_representation
+
+        return hex_representation
+    except socket.error:
+        # If the IP address is invalid, handle the exception as needed
+        raise ValueError("Invalid IP address format")
+
+# # Test the function
+# ip_address = "127.0.0.1"
+# hex_value = ip_to_hex(ip_address)
+# print(hex_value)
+
+def hex_to_ip(hex_value):
+    # Remove the '0x' prefix from the hex_value
+    hex_value = hex_value[2:]
+    
+    # Split the hex value into 4 segments (each representing 8 bits or 2 bytes)
+    segments = [hex_value[i:i+8] for i in range(0, len(hex_value), 8)]
+    
+    # Convert each segment from hexadecimal to decimal
+    decimal_segments = [int(segment, 16) for segment in segments]
+    
+    # Convert the decimal segments into an IP address string
+    ip_address = ".".join(str(dec) for dec in decimal_segments)
+    
+    return ip_address
+
+# Example usage:
+hex_value = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+ip_address = hex_to_ip(hex_value)
+print(ip_address)  # Output: "1.35.69.103.137.171.205.239.1.35.69.103.137.171.205.239"
+
+
+def ip_to_hex(ip_address):
+    # Split the IP address into 4 segments
+    ip_segments = ip_address.split('.')
+
+    # Convert each segment from decimal to hexadecimal and format it to be 2 digits wide
+    hex_segments = [format(int(segment), '02x') for segment in ip_segments]
+
+    # Join the hex segments and prepend '0x'
+    hex_value = '0x' + ''.join(hex_segments)
+
+    return hex_value
+
+# Example usage:
+ip_address = "127.0.0.1"
+hex_value = ip_to_hex(ip_address)
+print(hex_value)  # Output: "0x7f000001"
+
+
 def get_directory_usage(directory):
     stat = os.statvfs(directory)
     block_size = stat.f_frsize
@@ -178,6 +244,17 @@ currently_used_bytes = count_storage_bytes_in_use()
 # def is_space_available_to_store(nextShard):
 #     if (currently_used_bytes + nextShard < )
 
+# def start_ShardDeleted_event_listener():
+
+#     # Specify the event you want to listen for
+#     FileDeleted_event_filter = cloudySmartContract.events.ShardDeleted.createFilter(fromBlock="latest")
+
+#     # Start the event listener loop
+#     while True:
+#         for event in FileDeleted_event_filter.get_new_entries():
+#             delete_shard(event["shardId"])
+
+
 @app.route('/audit', methods=['POST'])
 def audit_files():
     # Check if 'shards' key exists in the request JSON data
@@ -200,5 +277,8 @@ def audit_files():
     return 'All files are stored locally', 200
 
 if __name__ == '__main__':
+    # import threading
+    # event_listener_thread = threading.Thread(target=start_ShardDeleted_event_listener)
+    # event_listener_thread.start()
     app.run(host='0.0.0.0', port=5002)
 

@@ -16,18 +16,18 @@ yarn global add ganache
 
 Open remix.ethereum.org, and clone our repository "https://github.com/ksarisen/Cloudy".
 You may need to set up a git personal access token, follow the instructions in Remix.
-In the file navigator on the left, open the file "Cloudy-Blockchain/contracts/cloudy_contract.sol"
-In the file navigator on the left, in the "Solidity Compiler" tab, Compile the file cloudy_contract.sol
+In the file navigator on the left, open the file "Cloudy-Blockchain/contracts/NewCloudy.sol"
+In the file navigator on the left, in the "Solidity Compiler" tab, Compile the file NewCloudy.sol
 Select the "Deploy and Run Transactions" tab, select environment "Dev - Ganache Provider",
 Ensure the "Ganache JSON-RPC Endpoint" in the pop up dialog matches "http://localhost:7545/" .
-Click the orange Deploy button selecting cloudy_contract.sol
+Click the orange Deploy button selecting NewCloudy.sol
 
 
 This Cloudy-Blockchain workspace contains the following directories:
 
-1. 'contracts': Holds our main cloudy_contract
+1. 'contracts': Holds our main NewCloudy contract, and deprecated older versions in /deprecated
 2. 'scripts': default deployment files, we plan to look into them more when trying to deploy properly.
-3. 'tests': Contains one Solidity test file for our main cloudy_contract. TODO: create JS test file.
+3. 'tests': Contains one Solidity test file for our main NewCloudy.sol. TODO: create JS test file.
 4. '.deps': Dependencies like the Ownable contract our main contract relies on.
 
 NOTES ON DEPLOYING CONTRACT
