@@ -16,7 +16,7 @@ contract DistributedStorage {
         address storageProvider;
         uint256 timestamp;
         bytes shardData;
-        bytes32 shardHash;
+        bytes32 fileHash;
         bool exists;
     }
     
@@ -341,7 +341,7 @@ contract DistributedStorage {
         }
 
         // Delete the shard from the file's list of shards
-        uint256[] storage fileShardIds = fileShards[shardToDelete.shardHash];
+        uint256[] storage fileShardIds = fileShards[shardToDelete.fileHash];
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             if (fileShardIds[i] == _shardId) {
                 fileShardIds[i] = fileShardIds[fileShardIds.length - 1];
