@@ -47,7 +47,6 @@ contract DistributedStorage {
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
-    event ShardDeleted(uint256 shardId);
     event StorageProviderAdded(address indexed storageProvider);
     event StorageProviderDeleted(address indexed storageProvider);
 
@@ -347,7 +346,7 @@ contract DistributedStorage {
         }
 
         // Delete the shard from the file's list of shards
-        uint256[] storage fileShardIds = fileShards[shardToDelete.fileHash];
+        uint256[] storage fileShardIds = fileShards[shardToDelete.shardHash];
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             if (fileShardIds[i] == _shardId) {
                 fileShardIds[i] = fileShardIds[fileShardIds.length - 1];
@@ -428,7 +427,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (bytes32, address, uint256, uint256, bool) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
@@ -446,26 +445,20 @@ contract DistributedStorage {
         return fileShards[_fileHash];
     }
 
-    struct StorageProviderDetails {
-        string ip;
-        address walletAddress;
-        uint256 availableStorageSpace;
-        uint256 maximumStorageSize;
-        bool isStoring;
-    }
-    function getStorageProvidersWithSpace() external view returns (StorageProviderDetails[] memory) {
+    function getStorageProvidersWithSpace() external view returns (StorageProvider[] memory) {
         uint256 length = providersWithSpace.length;
-        StorageProviderDetails[] memory providerDetailsArray = new StorageProviderDetails[](length);
+        StorageProvider[] memory providerDetailsArray = new StorageProvider[](length);
 
         for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersWithSpace[i];
             StorageProvider memory provider = providerDetails[providerAddress];
-            providerDetailsArray[i] = StorageProviderDetails({
+            providerDetailsArray[i] = StorageProvider({
                 ip: provider.ip,
                 walletAddress: provider.walletAddress,
                 availableStorageSpace: provider.availableStorageSpace,
                 maximumStorageSize: provider.maximumStorageSize,
-                isStoring: provider.isStoring
+                isStoring: provider.isStoring,
+                storedShardIds: provider.storedShardIds
             });
         }
 
@@ -505,7 +498,7 @@ contract DistributedStorage {
 
     function getIPsOfStorageProvidersWithSpace() external view returns (string[] memory) {
         uint256 length = providersWithSpace.length;
-        string[] memory ips = new string[](length);
+        bytes32[] memory ips = new bytes32[](length);
         
         
         for (uint256 i = 0; i < length; i++) {
