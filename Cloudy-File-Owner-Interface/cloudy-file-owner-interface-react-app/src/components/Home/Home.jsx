@@ -25,9 +25,8 @@ export const Home = (props) => {
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0x6f9Cb6502e2b4F6E846e244117F0C4E797f56322"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0xF7fb4e91bE2587148BB651d892D87a1E1F334cfE"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
-    console.log(contractAbi)//debugging Ben
 
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
 
@@ -83,27 +82,9 @@ export const Home = (props) => {
         event.preventDefault();
         checkHosting(); // confirm the blockchain is connected, for debugging only.
         uploadFile(file);
-        // const formData = new FormData()
-        // formData.append('file', file)
-        // fetch(
-        //     'url',
-        //     {
-        //         method: "POST",
-        //         body: formData
-        //     }
-        // )
-        // .then((response) => response.json())
-        // .then(
-        //     (result) => {
-        //         console.log('success', result)
-        //     }
-        // )
-        // .catch(error =>{
-        //     console.error("Error:", error)
-        // })
     }
 
-    //     // Encrypt file using AES
+    //     //TODO: Encrypt file using AES
     // function encryptFile(file, encryptionKey) {
     //     return new Promise((resolve, reject) => {
     //     const reader = new FileReader();
@@ -119,7 +100,7 @@ export const Home = (props) => {
     //     });
     // }
 
-    // // Decrypt file using AES
+    // //TODO: Decrypt file using AES
     // function decryptFile(encryptedFile, encryptionKey) {
     //     const decryptedData = CryptoJS.AES.decrypt(encryptedFile, encryptionKey);
     //     const decryptedText = decryptedData.toString(CryptoJS.enc.Utf8);
@@ -168,8 +149,6 @@ export const Home = (props) => {
             shards.push(slice);
             start += sliceSize;
         }
-
-        console.log("Exit splitFile function")
         return shards;
     }
 
@@ -177,64 +156,73 @@ export const Home = (props) => {
     async function uploadFile(file) {
         try {
             const fileName = file.name;
-        // TODO: Please change the way we hash stringToBytes20  
-        const _filehash = await stringToBytes20(fileName);
+            // TODO: Please change the way we hash stringToBytes20  
+            const _filehash = await stringToBytes20(fileName);
 
-        // TODO: Encrypt the file
+            // TODO: Encrypt the file
 
-        // Split file into shards
-        // Do not split shards yet. Try to upload file as 1 shard / 1 file first and see if it works
-        const shards = splitFile(file,1); // TODO: decide if we want to split files into more than 1 big shard
-    
-        // Get the first account from Ganache
-        const accounts = await web3.eth.getAccounts();
-        const sender = accounts[0];
-
-        console.log("uploadFile function: checkpoint 1"); 
-        // Get all storage Providers
-        //TODO: update to use uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds)
-        const gasEstimateForUpload = await cloudyContract.methods.getStorageProvidersIPs().estimateGas({ from: sender });
-
-        // Convert the gas estimate to a regular JavaScript number
-        const gasEstimateNumber = Number(gasEstimateForUpload);
-
-        // Check if the gas estimate exceeds the maximum safe integer limit
-        const gasBuffer = gasEstimateNumber <= Number.MAX_SAFE_INTEGER
-        ? gasEstimateNumber + 100000
-        : Number.MAX_SAFE_INTEGER;
-
-        // Call the contract function and expect an array of addresses as the result
-        // getStorageProvidersWithSpace()
-        const storageProviders = await cloudyContract.methods.getStorageProvidersIPs().call({ from: sender,  gas: gasBuffer });
-
-        console.log("List of Storage Providers: ", storageProviders); // Assuming the function returns an array of addresses
-
-        if(storageProviders.length < 1){
-            throw new Error('No available Storage Providers.');
-        }
+            // Split file into shards
+            // Do not split shards yet. Try to upload file as 1 shard / 1 file first and see if it works
+            const shards = splitFile(file,1); // TODO: decide if we want to split files into more than 1 big shard
         
-        // TODO: change blockchain code so that uploadFile function includes storage providers with no space and updates it
-        const storageProvidersNoSpace = [];
-        const storageProvidersWithSpace = [];
+            // Get the first account from Ganache
+            const accounts = await web3.eth.getAccounts();
+            const sender = accounts[0];
 
-        // Loop through providers
-        for (let i = 0; i < storageProviders.length; i++) {
-            // if(storageProviders[i].availableStorageSpace < 1024 * 1024){ // 1024 * 1024 = 1MB
-           if(storageProviders[i].availableStorageSpace < file.length){ // 1024 * 1024 = 1MB
-                storageProvidersNoSpace.push(storageProviders[i]);
-           }else{
-                storageProvidersWithSpace.push(storageProviders[i]);
-           }
-        }
+            console.log("uploadFile function: checkpoint 1"); 
+            // Get all storage Providers
+            //TODO: update to use uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds)
+            var gasEstimateForUpload = 50000
 
-        // const shardsToProviders = new Map();
+            try {
+                gasEstimateForUpload = await cloudyContract.methods
+                  .getIPsOfStorageProvidersWithSpace()
+                  .estimateGas({ from: sender });
+              } catch (error) {
+                console.error("ContractExecutionError:", error);
+              }
+
+            // Convert the gas estimate to a regular JavaScript number
+            const gasEstimateNumber = Number(gasEstimateForUpload);
+
+            // Check if the gas estimate exceeds the maximum safe integer limit
+            const gasBuffer = gasEstimateNumber <= Number.MAX_SAFE_INTEGER
+            ? gasEstimateNumber + 100000
+            : Number.MAX_SAFE_INTEGER;
+
+            // Call the contract function and expect an array of addresses as the result
+            // getStorageProvidersWithSpace()
+            const unformattedStorageProviders = await cloudyContract.methods.getIPsOfStorageProvidersWithSpace().call({ from: sender,  gas: gasBuffer });
+            const storageProviders = cleanUpIPsArray(unformattedStorageProviders);
+
+            console.log("List of Storage Providers: ", storageProviders); // Assuming the function returns an array of addresses
+
+            if(storageProviders.length < 1){
+                throw new Error('No available Storage Providers.');
+            }
+            
+            // TODO: change blockchain code so that uploadFile function includes storage providers with no space and updates it
+            const storageProvidersNoSpace = [];
+            const storageProvidersWithSpace = [];
+
+            // Loop through providers
+            for (let i = 0; i < storageProviders.length; i++) {
+                // if(storageProviders[i].availableStorageSpace < 1024 * 1024){ // 1024 * 1024 = 1MB
+            if(storageProviders[i].availableStorageSpace < file.length){ // 1024 * 1024 = 1MB
+                    storageProvidersNoSpace.push(storageProviders[i]);
+            }else{
+                    storageProvidersWithSpace.push(storageProviders[i]);
+            }
+            }
+
+            // const shardsToProviders = new Map();
+            
+            // what happends if we have more shards than storage providers?
+            // --> Loop over the storage providers again.
+
+            // TODO: for each upload that doesn't work please make sure that it is going to be uploaded
+            // TODO: make sure that successful upload checks that all the shards are uploaded first. since currently the logic is working for 1 file.
         
-        // what happends if we have more shards than storage providers?
-        // --> Loop over the storage providers again.
-
-        // TODO: for each upload that doesn't work please make sure that it is going to be uploaded
-        // TODO: make sure that successful upload checks that all the shards are uploaded first. since currently the logic is working for 1 file.
-    
             let successfulUpload = false;
             const shardIDs = [];
             for (let i = 0; i < shards.length; i++) {
@@ -249,12 +237,16 @@ export const Home = (props) => {
             const formData = new FormData();
             shards.forEach((shard, index) => {
                 //TODO: ensure fileName isnt just "blob"
-              formData.append(`shard_${index}`, shard);
+                const shardName = `shard_${index}_of_file_${fileName}`;
+                formData.append(shardName, shard);
+                console.log("formData of shard being sent:")
+                console.log(formData)
             });
     
                 try {
                     const response = await fetch(endpoint, {
                         method: 'POST',
+                        mode: 'cors',
                         body: formData,
                     });
     
@@ -277,7 +269,7 @@ export const Home = (props) => {
             }
     
             if (successfulUpload) {
-                const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender, gas: 500000 });
+                const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender, gas: 500000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
                 console.log("response to uploadFile():", response);
             }
     
@@ -301,9 +293,6 @@ export const Home = (props) => {
                 // shardIds (array) + storage providers
 
         */
-
-       
-
         const senderBalance = await web3.eth.getBalance(sender);
         console.log ("Current account balance is " + senderBalance);
     
@@ -312,6 +301,10 @@ export const Home = (props) => {
         } catch (error) {
             console.error('Failed to upload file:', error);
         }
+    }
+    function cleanUpIPsArray(ipsArray) {
+        //removes singel quotes added around solidity strings in arrays
+        return ipsArray.map((ip) => ip.replace(/'/g, ''));
     }
     // function generateShardId(shard) {
     //     const hash = crypto.createHash('sha256');

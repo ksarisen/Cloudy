@@ -61,9 +61,15 @@ def audit_storage_providers_loop():
             print("Storage providers to audit:", storageProvidersToAudit)
 
             if len(storageProvidersToAudit) > 0:
-                # Before selecting random shard IDs
-                print("Selecting random shard IDs to audit...")
-                shardIdsToAudit = selectRandomShardsToAudit(storageProvidersToAudit, 5)
+                # get all shardIDs
+                print("Selecting all currently stored shard IDs...")
+                shardIdsToAudit = selectAllStoredShards(storageProvidersToAudit)
+                
+                #Kerem's on-blockchain audit version wants to audit all the shards, so commenting out Ben's function getting a random subset of shards per audit.
+                # # Before selecting random shard IDs
+                # print("Selecting random shard IDs to audit...")
+                # shardIdsToAudit = selectRandomShardsToAudit(storageProvidersToAudit, 5)
+                
                 print("Shard IDs to audit:", shardIdsToAudit)
 
                 # Before auditing storage providers
@@ -80,7 +86,7 @@ def audit_storage_providers_loop():
 
             
             
-        #     #Beyond here is ben's version that actually pings each storage provider.
+        #     #Beyond here is ben's (unfinished) version that pings each storage provider to confirm they actually still hold the shard.
         #     for storageProvider in storageProvidersToAudit:
         #         # TODO: Concatenate StorageProvider.ip + ":5000/audit" to create the URL
         #         audit_url = f"http://{storageProvider['ip']}:5000/audit"
@@ -101,7 +107,7 @@ def audit_storage_providers_loop():
         #             if not response.ok or response.text.lower() == 'false':
         #                 #If a storageProvider fails to respond, remove it from the list of available providers
         #                 #TODO: find a way to reassign the shards it was holding using other redundant shards
-        #                 storageProvidersToAudit = cloudySmartContract.functions.getStorageProvidersStoring().call()
+        #                 storageProvidersToAudit = cloudySmartContract.functions.getAddressesOfStorageProvidersStoring().call()
         #                 # Log an error if the response is not successful or returns False
         #                 print(f"Error with Storage Provider {storageProvider['ip']}. Response: {response.text}")
 
@@ -130,8 +136,7 @@ def random_seconds():
 
 def selectRandomShardsToAudit(storageProviders, numShards):
      # Combine all storedShardIds from all storage providers into a single list
-    allStoredShardIds = [shardId for storageProvider in storageProviders for shardId in storageProvider['storedShardIds']]
-
+    allStoredShardIds = selectAllStoredShards(storageProviders)
     # If there are less than numShards shard IDs in total, return them all
     if len(allStoredShardIds) <= numShards:
         return allStoredShardIds
@@ -139,6 +144,11 @@ def selectRandomShardsToAudit(storageProviders, numShards):
     # Randomly select numShards shard IDs from the list
     selectedShardIds = random.sample(allStoredShardIds, numShards)
     return selectedShardIds
+
+def selectAllStoredShards(storageProviders):
+     # Combine all storedShardIds from all storage providers into a single list
+    allStoredShardIds = [shardId for storageProvider in storageProviders for shardId in storageProvider['storedShardIds']]
+    return allStoredShardIds
 
 if __name__ == '__main__':
     # Start the ping loop in a separate thread
