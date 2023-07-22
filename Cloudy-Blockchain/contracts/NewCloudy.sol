@@ -15,13 +15,12 @@ contract DistributedStorage {
         uint256 id;
         address storageProvider;
         uint256 timestamp;
-        bytes shardData;
         bytes32 fileHash;
         bool exists;
     }
     
     struct StorageProvider {
-        bytes32 ip;
+        string ip; //TODO: update this to bytes32 then write js converters from string to bytes32 to use in Home.jsx, and python converters from string to bytes32 to use in andIncentiveAuditorMain.py
         address walletAddress;
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
@@ -46,7 +45,6 @@ contract DistributedStorage {
 
     event ShardStored(uint256 shardId, address storageProvider);
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
-    event ShardDeleted(uint256 shardId);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
     event ShardDeleted(uint256 shardId);
@@ -119,21 +117,19 @@ contract DistributedStorage {
         filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, _shardIds, true);
         ownerFiles[msg.sender].push(_fileHash);
         isFileBeingStored[_fileHash] = true;
-
+        for (uint256 i = 0; i < _shardIds.length; i++) {
+            uint256 shardId = _shardIds[i];
+            createShard(shardId, _fileHash);
+        }
         emit FileUploaded(msg.sender, _fileHash);
     }
 
-    // function createShard(bytes memory _shardData, bytes32 _fileHash, address _storageProvider) internal returns (uint256)
-    // {
-    //     uint256 shardId = shardCounter;
-    //     shards[shardId] = Shard(shardId, _storageProvider, block.timestamp, _shardData, _fileHash, true);
-    //     shardsHeldBystorageProvider[_storageProvider].push(shardId);
-    //     fileShards[_fileHash].push(shardId); // Update fileShards mapping
-    //     providerDetails[_storageProvider].storedShardIds.push(shardId); // Update storedShardIds
-    //     emit ShardStored(shardId, _storageProvider);
-    //     shardCounter++;
-    //     return shardId;
-    // }
+    function createShard(uint256 shardId, bytes32 _fileHash) internal
+    {
+        shards[shardId] = Shard(shardId, address(0), block.timestamp, _fileHash, true);
+        fileShards[_fileHash].push(shardId); // Update fileShards mapping
+        shardCounter++;
+    }
 
     function deleteFile(bytes32 _fileHash) external {
         require(isFileBeingStored[_fileHash] = true, "File does not exist");
@@ -162,13 +158,15 @@ contract DistributedStorage {
 
     }
 
-    // Function assigns a storage provider to a shard
-    function assignStorageProvider(uint256 _shardId, address _storageProvider) external {
-        require(shards[_shardId].exists, "Shard does not exist");
-        require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
+    // Function assigns a storage provider to a new shard, or reassigns existing shard to new storage provider
+    function assignShardToStorageProvider(uint256 _shardId, address _storageProvider) external {
+        //TODO: ensure we check the msg.sender (the storage provider holding this shard) is the one being assigned to it
+        //require(shards[_shardId].exists, "Shard does not exist");
+        //require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
 
         address currentProvider = shards[_shardId].storageProvider;
         if (currentProvider != _storageProvider) {
+            //this shard is being reassigned from a different provider.
             // Remove the shard from the current provider's list
             uint256[] storage currentProviderShards = shardsHeldBystorageProvider[currentProvider];
             for (uint256 i = 0; i < currentProviderShards.length; i++) {
@@ -183,7 +181,6 @@ contract DistributedStorage {
             // Assign the shard to the new provider
 
             uint256[] storage newProviderShards = shardsHeldBystorageProvider[_storageProvider];
-            require(newProviderShards.length + 1 <= providerDetails[_storageProvider].availableStorageSpace, "Storage provider does not have enough space for the shard");
 
             shards[_shardId].storageProvider = _storageProvider;
             newProviderShards.push(_shardId);
@@ -192,6 +189,13 @@ contract DistributedStorage {
             // shardsHeldBystorageProvider[_storageProvider].push(_shardId);
 
             emit ShardStored(_shardId, _storageProvider);
+        }
+        else{
+            //this is a new shard
+
+            //TODO: why do we have two different spots tracking the same data? lets just pick one and roll with it.
+            shardsHeldByStorageProvider[_storageProvider].push(shardId);
+            providerDetails[_storageProvider].storedShardIds.push(shardId);
         }
     }
 
@@ -243,10 +247,11 @@ contract DistributedStorage {
     // If you need to update these values externally, you can change the visibility to external and add appropriate access control mechanisms to protect them.
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
-    function addStorageProvider(bytes32 _ip, address _walletAddress, uint256 _maximumStorageSize) external {
+    function addStorageProvider(string memory _ip, address _walletAddress, uint256 _maximumStorageSize) external {
         //what can we use for ip addresses? e.g. "127.0.0.1"  cant figure out how to send _ip as bytes32 using python
         //send it without a type, then pack/unpack.
-        require(providerDetails[msg.sender].isStoring, "Storage provider already exists");
+
+        require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
         providersWithSpace.push(msg.sender);
@@ -466,9 +471,12 @@ contract DistributedStorage {
 
         return providerDetailsArray;
     }
-    //When would an external ever need the address of a struct that can only be accessed within solidity? we need the data inside the struct, not its address.
+    //TODO: Ben suggests we delete these 2 functions. When would an external ever need the address of a struct that can only be accessed within solidity? we need the data inside the struct, not its address.
     function getAddressesOfStorageProvidersStoring() external view returns (address[] memory) {
         return providersStoring;
+    }
+    function getAddressesOfStorageProvidersWithSpace() external view returns (address[] memory) {
+        return providersWithSpace;
     }
 
     // Access the data of StorageProviders whose addresses are in providersStoring
@@ -489,20 +497,31 @@ contract DistributedStorage {
     return providersData;
 }
 
-    function getStorageProvidersStoring() external view returns (address[] memory) {
-        return providersStoring;
-    }
+    
 
     function getProviderStoredShards(address _storageProvider) external view returns (uint256[] memory) {
         return providerDetails[_storageProvider].storedShardIds;
     }
 
-    function getStorageProvidersIPs() external view returns (string[] memory) {
+    function getIPsOfStorageProvidersWithSpace() external view returns (string[] memory) {
         uint256 length = providersWithSpace.length;
         string[] memory ips = new string[](length);
         
+        
         for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersWithSpace[i];
+            ips[i] = providerDetails[providerAddress].ip;
+        }
+        
+        return ips;
+    }
+
+    function getIPsOfStorageProvidersStoringShards() external view returns (string[] memory) {
+        uint256 length = providersStoring.length;
+        string[] memory ips = new string[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            address providerAddress = providersStoring[i];
             ips[i] = providerDetails[providerAddress].ip;
         }
         
