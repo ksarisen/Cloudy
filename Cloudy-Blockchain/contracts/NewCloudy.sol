@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 contract DistributedStorage {
@@ -33,8 +34,6 @@ contract DistributedStorage {
     mapping(address => uint256[]) public shardsHeldBystorageProvider; // mapping that associates each storage provider wallet address with the shards they hold.
     mapping(address => StorageProvider) public providerDetails;
     mapping(address => bytes32[]) public ownerFiles; // mapping has been added to track which files are owned by each address (owner)
-    //@Kerem why do we need fileshards mapping filehash to shardlist, when we can ge that via filesByHash[_fileHash].shardIds?
-    mapping(bytes32 => uint256[]) public fileShards; // mapping has been added to track which shards are part of each file
     mapping(bytes32 => bool) public isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
 
     address[] public providersWithSpace; // array has been added to store the addresses of storage providers who still have space available for new files
@@ -45,6 +44,7 @@ contract DistributedStorage {
 
     event ShardStored(uint256 shardId, address storageProvider);
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
+    event ShardDeleted(uint256 shardId);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
     event StorageProviderAdded(address indexed storageProvider);
@@ -126,7 +126,7 @@ contract DistributedStorage {
     function createShard(uint256 shardId, bytes32 _fileHash) internal
     {
         shards[shardId] = Shard(shardId, address(0), block.timestamp, _fileHash, true);
-        fileShards[_fileHash].push(shardId); // Update fileShards mapping
+        filesByHash[_fileHash].shardIds.push(shardId); 
         shardCounter++;
     }
 
@@ -135,13 +135,11 @@ contract DistributedStorage {
         File storage fileToDelete = filesByHash[_fileHash];
         require(msg.sender == fileToDelete.owner, "Only the file owner can delete the file");
 
-        // Delete the file's shards from the fileShards mapping
-        uint256[] storage fileShardIds = fileShards[_fileHash];
+        uint256[] storage fileShardIds = filesByHash[_fileHash].shardIds;
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             emit ShardDeleted(fileShardIds[i]);//this is listened for by CloudyStorageMain.py
             delete shards[fileShardIds[i]];
         }
-        delete fileShards[_fileHash]; // Delete the mapping entry for the file
         isFileBeingStored[_fileHash] = false;
         // Delete the file from the owner's list of files
         bytes32[] storage ownerFileHashes = ownerFiles[msg.sender];
@@ -193,8 +191,9 @@ contract DistributedStorage {
             //this is a new shard
 
             //TODO: why do we have two different spots tracking the same data? lets just pick one and roll with it.
-            shardsHeldByStorageProvider[_storageProvider].push(shardId);
-            providerDetails[_storageProvider].storedShardIds.push(shardId);
+            //shardsHeldByStorageProvider[_storageProvider].push(_shardId);
+            providerDetails[_storageProvider].storedShardIds.push(_shardId);
+            shards[_shardId].storageProvider = _storageProvider;
         }
     }
 
@@ -346,7 +345,7 @@ contract DistributedStorage {
         }
 
         // Delete the shard from the file's list of shards
-        uint256[] storage fileShardIds = fileShards[shardToDelete.fileHash];
+        uint256[] storage fileShardIds = filesByHash[shardToDelete.fileHash].shardIds ; 
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             if (fileShardIds[i] == _shardId) {
                 fileShardIds[i] = fileShardIds[fileShardIds.length - 1];
@@ -427,7 +426,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (bytes32, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
@@ -442,7 +441,7 @@ contract DistributedStorage {
     }
     
     function getFilesShards(bytes32 _fileHash) external view returns (uint256[] memory) {
-        return fileShards[_fileHash];
+        return filesByHash[_fileHash].shardIds ;
     }
 
     function getStorageProvidersWithSpace() external view returns (StorageProvider[] memory) {
@@ -464,31 +463,24 @@ contract DistributedStorage {
 
         return providerDetailsArray;
     }
-    //TODO: Ben suggests we delete these 2 functions. When would an external ever need the address of a struct that can only be accessed within solidity? we need the data inside the struct, not its address.
-    function getAddressesOfStorageProvidersStoring() external view returns (address[] memory) {
-        return providersStoring;
-    }
-    function getAddressesOfStorageProvidersWithSpace() external view returns (address[] memory) {
-        return providersWithSpace;
-    }
 
     // Access the data of StorageProviders whose addresses are in providersStoring
     // The function is used by the incentiveAuditor
     function getStorageProviderDataOfProvidersCurrentlyStoringShards() external view returns (StorageProvider[] memory) {
-    uint256 providersCount = providersStoring.length;
-    if (providersCount == 0) {
-        // Return an empty array if there are no storage providers
-        return new StorageProvider[](0);
-    }
+        uint256 providersCount = providersStoring.length;
+        if (providersCount == 0) {
+            // Return an empty array if there are no storage providers
+            return new StorageProvider[](0);
+        }
 
-    StorageProvider[] memory providersData = new StorageProvider[](providersCount);
+        StorageProvider[] memory providersData = new StorageProvider[](providersCount);
 
-    for (uint256 i = 0; i < providersCount; i++) {
-        address providerAddress = providersStoring[i];
-        providersData[i] = providerDetails[providerAddress]; //actually access the data stored in the associated StorageProvider struct
+        for (uint256 i = 0; i < providersCount; i++) {
+            address providerAddress = providersStoring[i];
+            providersData[i] = providerDetails[providerAddress]; //actually access the data stored in the associated StorageProvider struct
+        }
+        return providersData;
     }
-    return providersData;
-}
 
     
 
@@ -498,7 +490,7 @@ contract DistributedStorage {
 
     function getIPsOfStorageProvidersWithSpace() external view returns (string[] memory) {
         uint256 length = providersWithSpace.length;
-        bytes32[] memory ips = new bytes32[](length);
+        string[] memory ips = new string[](length);
         
         
         for (uint256 i = 0; i < length; i++) {
