@@ -1,6 +1,7 @@
 #Benjamin Djukastein, created in part via ChatGPT prompts
 import os
 import json
+import re
 from flask import Flask, abort, make_response, request, render_template, send_file, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -91,20 +92,25 @@ def upload_shards():
             total_bytes_uploading += shard_size
 
     if total_bytes_uploading <= available_storage_bytes:
-        print("Directory usage is within the limit.")
-        shards = request.files
 
         for shard in request.files.values():
             # Check if a file was selected
-            if shard.filename == '':
-                return 'Cannot save nameless shards.'
+            if shard.name == '':
+                return jsonify({'error': 'Cannot save nameless shards.'}), 400 
+            if not is_valid_filename(shard.name):
+                return jsonify({'error': 'shard name invalid, must start with the phrase "shard_1"..., where 1 is the id of the shard'}), 400
+
             # Save the file to the specified path
-            shard_name = secure_filename(shard.filename)
+            shard_name = secure_filename(shard.name)
             #use the raw path from .env file to prevent backslashes from being misinterpreted.
             shard.save(r"{}/{}".format(os.getenv('LOCAL_STORAGE_PATH'), shard_name))
             #update blockchain to track which storage provider is storing this shard
             #TODO: get id from shard/sent file blob.
-            response = cloudySmartContract.functions.assignStorageProvider(shard.id, wallet_address).call()
+            shardId = getShardIdfromShardName(shard_name)
+            if shardId == -1:
+                response_str = f"Unable to find shardId of shard {shard_name}"
+                return jsonify({'error': response_str}), 400
+            response = cloudySmartContract.functions.assignShardToStorageProvider(shardId, wallet_address).call()
             #TODO: check if storageProvider is now full. if so, take it off the blockchain list of availableProviders
             
 
@@ -214,11 +220,32 @@ def ip_to_hex(ip_address):
     hex_value = '0x' + ''.join(hex_segments)
 
     return hex_value
-
 # Example usage:
-ip_address = "127.0.0.1"
-hex_value = ip_to_hex(ip_address)
-print(hex_value)  # Output: "0x7f000001"
+# ip_address = "127.0.0.1"
+# hex_value = ip_to_hex(ip_address)
+# print(hex_value)  # Output: "0x7f000001"
+
+
+def is_valid_filename(filename):
+    # Define the regular expression pattern to match the filename format
+    pattern = r'^shard_\d+_of_file_.+$'
+    return re.match(pattern, filename)
+
+def getShardIdfromShardName(filename):
+    if is_valid_filename(filename):
+        # Define the regular expression pattern to match the integer after the first underscore
+        pattern = r'_\d+'
+
+        # Search for the pattern in the filename
+        match = re.search(pattern, filename)
+
+        if match:
+            # If a match is found, extract the integer part and convert it to an integer
+            shard_number = int(match.group()[1:])
+            return shard_number
+
+    # If the filename is not valid or no match is found, return the default value of 0
+    return -1
 
 
 def get_directory_usage(directory):

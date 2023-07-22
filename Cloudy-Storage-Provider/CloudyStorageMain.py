@@ -6,6 +6,8 @@ from flask import Flask, abort, make_response, request, render_template, send_fi
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from web3 import Web3
+from flask_cors import CORS
+
 import CloudyStorageFlaskServer  # Import the Flask app
 import socket
 
@@ -46,7 +48,7 @@ def get_host_ip():
 
 def get_storage_providers():
     # Get the list of storage providers from the contract
-    storage_providers = cloudySmartContract.functions.getStorageProvidersStoring().call()
+    storage_providers = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
     print("Currently stored storage providers:")
     for provider in storage_providers:
         print(provider)
@@ -58,8 +60,12 @@ def set_blockchain_endpoint():
     storage_provider_ip = "http://127.0.0.1"  # Replace this with the correct IP #"http://127.0.0.1:5002" 
 
     # Check if the storage provider already exists in the contract
-    if wallet_address in cloudySmartContract.functions.getStorageProvidersStoring().call():
-        print("Storage provider already exists in the contract.")
+    if wallet_address in cloudySmartContract.functions.getAddressesOfStorageProvidersStoring().call():
+        print("Storage provider's walletAddress exists in the contract")
+        return
+    # Check if the storage provider already exists in the contract
+    if storage_provider_ip in cloudySmartContract.functions.getIPsOfStorageProvidersWithSpace().call():
+        print("Storage provider's IP exists in the contract.")
         return
 
     available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
@@ -78,6 +84,7 @@ def set_blockchain_endpoint():
         print(f"Transaction successful. Response: {response}")
         get_storage_providers()  # for debugging
     except Exception as e:
+        #Unable to add storageProvider, likely due to it already having been added previously.
         print(f"Error: {e}")
 
     # Use the response variable here or handle it as needed
@@ -99,6 +106,8 @@ def count_storage_bytes_in_use():
 
     return total_size
 currently_used_bytes = count_storage_bytes_in_use()
+
+CORS(CloudyStorageFlaskServer.app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
 if __name__ == '__main__':
     # Run the other functions first
