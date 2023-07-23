@@ -47,7 +47,6 @@ contract DistributedStorage {
     event ShardDeleted(uint256 shardId);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
-    event ShardDeleted(uint256 shardId);
     event StorageProviderAdded(address indexed storageProvider);
     event StorageProviderDeleted(address indexed storageProvider);
 
