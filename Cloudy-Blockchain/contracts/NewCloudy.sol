@@ -30,7 +30,7 @@ contract DistributedStorage {
 
     mapping(uint256 => Shard) public shards; // mapping that stores all the shards by their ID.
     mapping(bytes32 => File) public filesByHash; // Updated to use file hash as key
-    mapping(address => uint256[]) public shardsHeldBystorageProvider; // mapping that associates each storage provider wallet address with the shards they hold.
+    mapping(address => uint256[]) public shardsHeldByStorageProvider; // mapping that associates each storage provider wallet address with the shards they hold.
     mapping(address => StorageProvider) public providerDetails;
     mapping(address => bytes32[]) public ownerFiles; // mapping has been added to track which files are owned by each address (owner)
     //@Kerem why do we need fileshards mapping filehash to shardlist, when we can ge that via filesByHash[_fileHash].shardIds?
@@ -47,6 +47,7 @@ contract DistributedStorage {
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
+    event ShardDeleted(uint256 shardId);
     event StorageProviderAdded(address indexed storageProvider);
     event StorageProviderDeleted(address indexed storageProvider);
 
@@ -167,7 +168,7 @@ contract DistributedStorage {
         if (currentProvider != _storageProvider) {
             //this shard is being reassigned from a different provider.
             // Remove the shard from the current provider's list
-            uint256[] storage currentProviderShards = shardsHeldBystorageProvider[currentProvider];
+            uint256[] storage currentProviderShards = shardsHeldByStorageProvider[currentProvider];
             for (uint256 i = 0; i < currentProviderShards.length; i++) {
                 if (currentProviderShards[i] == _shardId) {
                     currentProviderShards[i] = currentProviderShards[currentProviderShards.length - 1];
@@ -179,7 +180,7 @@ contract DistributedStorage {
 
             // Assign the shard to the new provider
 
-            uint256[] storage newProviderShards = shardsHeldBystorageProvider[_storageProvider];
+            uint256[] storage newProviderShards = shardsHeldByStorageProvider[_storageProvider];
 
             shards[_shardId].storageProvider = _storageProvider;
             newProviderShards.push(_shardId);
@@ -193,8 +194,8 @@ contract DistributedStorage {
             //this is a new shard
 
             //TODO: why do we have two different spots tracking the same data? lets just pick one and roll with it.
-            shardsHeldByStorageProvider[_storageProvider].push(shardId);
-            providerDetails[_storageProvider].storedShardIds.push(shardId);
+            shardsHeldByStorageProvider[_storageProvider].push(_shardId);
+            providerDetails[_storageProvider].storedShardIds.push(_shardId);
         }
     }
 
@@ -335,7 +336,7 @@ contract DistributedStorage {
         require(msg.sender == storageProvider, "Only the storage provider can delete the shard");
 
         // Delete the shard from the storage provider's list
-        uint256[] storage providerShards = shardsHeldBystorageProvider[storageProvider];
+        uint256[] storage providerShards = shardsHeldByStorageProvider[storageProvider];
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
                 providerShards[i] = providerShards[providerShards.length - 1];
@@ -384,7 +385,7 @@ contract DistributedStorage {
         address storageProvider = shard.storageProvider;
 
         // Remove the shard from the storage provider's list
-        uint256[] storage providerShards = shardsHeldBystorageProvider[storageProvider];
+        uint256[] storage providerShards = shardsHeldByStorageProvider[storageProvider];
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
                 providerShards[i] = providerShards[providerShards.length - 1];
@@ -404,7 +405,7 @@ contract DistributedStorage {
 
         // Remove the storage provider from the mappings
         delete providerDetails[_storageProvider];
-        delete shardsHeldBystorageProvider[_storageProvider];
+        delete shardsHeldByStorageProvider[_storageProvider];
 
         // Remove the storage provider from the arrays
         for (uint256 i = 0; i < providersWithSpace.length; i++) {
@@ -427,7 +428,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (bytes32, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
     }
@@ -498,7 +499,7 @@ contract DistributedStorage {
 
     function getIPsOfStorageProvidersWithSpace() external view returns (string[] memory) {
         uint256 length = providersWithSpace.length;
-        bytes32[] memory ips = new bytes32[](length);
+        string[] memory ips = new string[](length);
         
         
         for (uint256 i = 0; i < length; i++) {
