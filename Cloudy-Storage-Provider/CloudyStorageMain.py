@@ -60,12 +60,8 @@ def set_blockchain_endpoint():
     storage_provider_ip = "http://127.0.0.1"  # Replace this with the correct IP #"http://127.0.0.1:5002" 
 
     # Check if the storage provider already exists in the contract
-    if wallet_address in cloudySmartContract.functions.getAddressesOfStorageProvidersStoring().call():
-        print("Storage provider's walletAddress exists in the contract")
-        return
-    # Check if the storage provider already exists in the contract
     if storage_provider_ip in cloudySmartContract.functions.getIPsOfStorageProvidersWithSpace().call():
-        print("Storage provider's IP exists in the contract.")
+        print("Storage provider already exists in the contract.")
         return
 
     available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()

@@ -1,5 +1,111 @@
 [
 	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ip",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "_walletAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_maximumStorageSize",
+				"type": "uint256"
+			}
+		],
+		"name": "addStorageProvider",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_shardId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "_storageProvider",
+				"type": "address"
+			}
+		],
+		"name": "assignShardToStorageProvider",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_shardId",
+				"type": "uint256"
+			}
+		],
+		"name": "auditShard",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "_shardIds",
+				"type": "uint256[]"
+			}
+		],
+		"name": "auditStorageProviders",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_fileHash",
+				"type": "bytes32"
+			}
+		],
+		"name": "deleteFile",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_shardId",
+				"type": "uint256"
+			}
+		],
+		"name": "deleteShard",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_storageProvider",
+				"type": "address"
+			}
+		],
+		"name": "deleteStorageProvider",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
@@ -128,40 +234,17 @@
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "_ip",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "_walletAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_maximumStorageSize",
-				"type": "uint256"
-			}
-		],
-		"name": "addStorageProvider",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_shardId",
-				"type": "uint256"
-			},
-			{
 				"internalType": "address",
 				"name": "_storageProvider",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_newAvailableSpace",
+				"type": "uint256"
 			}
 		],
-		"name": "assignShardToStorageProvider",
+		"name": "updateAvailableStorageSpace",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -170,89 +253,41 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "_shardId",
+				"name": "_newRewardAmount",
 				"type": "uint256"
 			}
 		],
-		"name": "auditShard",
+		"name": "updateRewardAmount",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_ownerName",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_fileName",
+				"type": "string"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_fileHash",
+				"type": "bytes32"
+			},
 			{
 				"internalType": "uint256[]",
 				"name": "_shardIds",
 				"type": "uint256[]"
 			}
 		],
-		"name": "auditStorageProviders",
+		"name": "uploadFile",
 		"outputs": [],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "_fileHash",
-				"type": "bytes32"
-			}
-		],
-		"name": "deleteFile",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_shardId",
-				"type": "uint256"
-			}
-		],
-		"name": "deleteShard",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_storageProvider",
-				"type": "address"
-			}
-		],
-		"name": "deleteStorageProvider",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "fileShards",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -289,32 +324,6 @@
 				"internalType": "bool",
 				"name": "exists",
 				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getAddressesOfStorageProvidersStoring",
-		"outputs": [
-			{
-				"internalType": "address[]",
-				"name": "",
-				"type": "address[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getAddressesOfStorageProvidersWithSpace",
-		"outputs": [
-			{
-				"internalType": "address[]",
-				"name": "",
-				"type": "address[]"
 			}
 		],
 		"stateMutability": "view",
@@ -516,6 +525,11 @@
 				"internalType": "bool",
 				"name": "",
 				"type": "bool"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
 			}
 		],
 		"stateMutability": "view",
@@ -551,9 +565,14 @@
 						"internalType": "bool",
 						"name": "isStoring",
 						"type": "bool"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "storedShardIds",
+						"type": "uint256[]"
 					}
 				],
-				"internalType": "struct DistributedStorage.StorageProviderDetails[]",
+				"internalType": "struct DistributedStorage.StorageProvider[]",
 				"name": "",
 				"type": "tuple[]"
 			}
@@ -733,11 +752,6 @@
 				"type": "uint256"
 			},
 			{
-				"internalType": "bytes",
-				"name": "shardData",
-				"type": "bytes"
-			},
-			{
 				"internalType": "bytes32",
 				"name": "fileHash",
 				"type": "bytes32"
@@ -764,7 +778,7 @@
 				"type": "uint256"
 			}
 		],
-		"name": "shardsHeldBystorageProvider",
+		"name": "shardsHeldByStorageProvider",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -773,65 +787,6 @@
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_storageProvider",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_newAvailableSpace",
-				"type": "uint256"
-			}
-		],
-		"name": "updateAvailableStorageSpace",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newRewardAmount",
-				"type": "uint256"
-			}
-		],
-		"name": "updateRewardAmount",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "_ownerName",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "_fileName",
-				"type": "string"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "_fileHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "_shardIds",
-				"type": "uint256[]"
-			}
-		],
-		"name": "uploadFile",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]
