@@ -26,12 +26,11 @@ contract DistributedStorage {
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
         bool isStoring;
-        uint256[] storedShardIds;
+        uint256[] storedShardIds; // mapping that associates each storage provider wallet address with the shards they hold.
     }
 
     mapping(uint256 => Shard) public shards; // mapping that stores all the shards by their ID.
     mapping(bytes32 => File) public filesByHash; // Updated to use file hash as key
-    mapping(address => uint256[]) public shardsHeldByStorageProvider; // mapping that associates each storage provider wallet address with the shards they hold.
     mapping(address => StorageProvider) public providerDetails;
     mapping(address => bytes32[]) public ownerFiles; // mapping has been added to track which files are owned by each address (owner)
     mapping(bytes32 => bool) public isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
@@ -52,7 +51,7 @@ contract DistributedStorage {
 
     constructor() {
         shardCounter = 1;
-        rewardAmount = 1 ether; // Set the initial reward amount
+        rewardAmount = 0.00001 ether; // Set the initial reward amount
     }
 
     // Function allows users to upload a file by providing its hash
@@ -63,7 +62,7 @@ contract DistributedStorage {
     // It checks that at least one shard is provided, and then iterates through the shard IDs to update the necessary relationships.
     
     // The function assigns the file owner, owner name, file name, file hash, and shard IDs to the files mapping. 
-    // It also adds the shard IDs to the ownerFiles mapping and updates the storage provider and shard mappings (shardsHeldBystorageProvider and fileShards) accordingly.
+    // It also adds the shard IDs to the ownerFiles mapping and updates the storage provider and shard mappings (storageProvider.storedShardIds) accordingly.
 
     // This ensures that the relationships between shards and files are stored and tracked as the file is being uploaded.
 
@@ -149,40 +148,35 @@ contract DistributedStorage {
     function assignShardToStorageProvider(uint256 _shardId, address _storageProvider) external {
         //TODO: ensure we check the msg.sender (the storage provider holding this shard) is the one being assigned to it
         //require(shards[_shardId].exists, "Shard does not exist");
-        //require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
+        require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
 
-        address currentProvider = shards[_shardId].storageProvider;
-        if (currentProvider != _storageProvider) {
+        address currentProviderAddress = shards[_shardId].storageProvider;
+        if (currentProviderAddress != _storageProvider && currentProviderAddress != address(0)) {
             //this shard is being reassigned from a different provider.
             // Remove the shard from the current provider's list
-            uint256[] storage currentProviderShards = shardsHeldByStorageProvider[currentProvider];
-            for (uint256 i = 0; i < currentProviderShards.length; i++) {
-                if (currentProviderShards[i] == _shardId) {
-                    currentProviderShards[i] = currentProviderShards[currentProviderShards.length - 1];
-                    currentProviderShards.pop();
-                    //delete currentProviderShards[i];
+            StorageProvider storage currentProviderDetails = providerDetails[currentProviderAddress];
+            for (uint256 i = 0; i < currentProviderDetails.storedShardIds.length; i++) {
+                if (currentProviderDetails.storedShardIds[i] == _shardId) {
+                    currentProviderDetails.storedShardIds[i] = currentProviderDetails.storedShardIds[currentProviderDetails.storedShardIds.length - 1];
+                    currentProviderDetails.storedShardIds.pop();
                     break;
                 }
             }
 
             // Assign the shard to the new provider
-
-            uint256[] storage newProviderShards = shardsHeldByStorageProvider[_storageProvider];
-
             shards[_shardId].storageProvider = _storageProvider;
-            newProviderShards.push(_shardId);
+
+            StorageProvider storage newProviderDetails = providerDetails[_storageProvider];
+            newProviderDetails.storedShardIds.push(_shardId);
             providerDetails[_storageProvider].storedShardIds.push(_shardId);
-
-            // shards[_shardId].storageProvider = _storageProvider;
-            // shardsHeldBystorageProvider[_storageProvider].push(_shardId);
-
             emit ShardStored(_shardId, _storageProvider);
         }
         else{
             //this is a new shard
-
-            //TODO: why do we have two different spots tracking the same data? lets just pick one and roll with it.
-            //shardsHeldByStorageProvider[_storageProvider].push(_shardId);
+            if (providerDetails[_storageProvider].storedShardIds.length == 0) {
+                //if this is their first shard, add to list of providers actively storing shards
+                providersStoring.push(_storageProvider);
+            }
             providerDetails[_storageProvider].storedShardIds.push(_shardId);
             shards[_shardId].storageProvider = _storageProvider;
         }
@@ -321,11 +315,12 @@ contract DistributedStorage {
     function deleteShard(uint256 _shardId) external {
         require(shards[_shardId].exists, "Shard does not exist");
         Shard storage shardToDelete = shards[_shardId];
-        address storageProvider = shardToDelete.storageProvider;
-        require(msg.sender == storageProvider, "Only the storage provider can delete the shard");
+        address storageProviderAddress = shardToDelete.storageProvider;
+        StorageProvider storage storageProviderDetails = providerDetails[storageProviderAddress];
+        require(msg.sender == storageProviderAddress, "Only the storage provider can delete the shard");
 
         // Delete the shard from the storage provider's list
-        uint256[] storage providerShards = shardsHeldByStorageProvider[storageProvider];
+        uint256[] storage providerShards = storageProviderDetails.storedShardIds;
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
                 providerShards[i] = providerShards[providerShards.length - 1];
@@ -349,6 +344,11 @@ contract DistributedStorage {
         // Delete the shard from the shards mapping
         delete shards[_shardId];
 
+        //TODO: pop/remove the shard from storageProviderDetails.storedShardIds
+        //TODO: ensure if this is a storage provider's last shard, we remove them from the list of storage providers currently storing shards.
+        
+        
+
         emit ShardDeleted(_shardId);
     }
 
@@ -371,15 +371,15 @@ contract DistributedStorage {
 
     function removeShardFromProvider(uint256 _shardId) internal {
         Shard storage shard = shards[_shardId];
-        address storageProvider = shard.storageProvider;
+        address storageProviderAddress = shard.storageProvider;
+        StorageProvider storage storageProviderDetails = providerDetails[storageProviderAddress];
 
         // Remove the shard from the storage provider's list
-        uint256[] storage providerShards = shardsHeldByStorageProvider[storageProvider];
+        uint256[] storage providerShards = storageProviderDetails.storedShardIds;
         for (uint256 i = 0; i < providerShards.length; i++) {
-            if (providerShards[i] == _shardId) {
-                providerShards[i] = providerShards[providerShards.length - 1];
-                providerShards.pop();
-                //delete providerShards[i];
+            if (storageProviderDetails.storedShardIds[i] == _shardId) {
+                storageProviderDetails.storedShardIds[i] = storageProviderDetails.storedShardIds[storageProviderDetails.storedShardIds.length - 1];
+                storageProviderDetails.storedShardIds.pop();
                 break;
             }
         }
@@ -391,10 +391,9 @@ contract DistributedStorage {
     function deleteStorageProvider(address _storageProvider) external {
         //TODO: improve security so random people cant just delete all our storage providers
         require(providerDetails[_storageProvider].isStoring, "Storage provider does not exist");
-
-        // Remove the storage provider from the mappings
+        // Remove the storage provider's details
+        delete providerDetails[_storageProvider].storedShardIds;
         delete providerDetails[_storageProvider];
-        delete shardsHeldByStorageProvider[_storageProvider];
 
         // Remove the storage provider from the arrays
         for (uint256 i = 0; i < providersWithSpace.length; i++) {
@@ -412,6 +411,7 @@ contract DistributedStorage {
                 break;
             }
         }
+        delete _storageProvider;
 
         emit StorageProviderDeleted(_storageProvider);
     }
