@@ -8,12 +8,12 @@ contract DistributedStorage {
         string ownerName;
         string fileName;
         bytes32 fileHash;
-        uint256[] shardIds;
+        bytes32[] shardIds;
         bool exists;
     }
 
     struct Shard {
-        uint256 id;
+        bytes32 id;
         address storageProvider;
         uint256 timestamp;
         bytes32 fileHash;
@@ -26,24 +26,24 @@ contract DistributedStorage {
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
         bool isStoring;
-        uint256[] storedShardIds; // mapping that associates each storage provider wallet address with the shards they hold.
+        bytes32[] storedShardIds; // mapping that associates each storage provider wallet address with the shards they hold.
     }
 
-    mapping(uint256 => Shard) public shards; // mapping that stores all the shards by their ID.
-    mapping(bytes32 => File) public filesByHash; // Updated to use file hash as key
-    mapping(address => StorageProvider) public providerDetails;
-    mapping(address => bytes32[]) public ownerFiles; // mapping has been added to track which files are owned by each address (owner)
-    mapping(bytes32 => bool) public isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
+    mapping(bytes32 => Shard) private shards; // mapping that stores all the shards by their ID.
+    mapping(bytes32 => File) private filesByHash; // Updated to use file hash as key
+    mapping(address => StorageProvider) private providerDetails;
+    mapping(address => bytes32[]) private ownerFiles; // mapping has been added to track which files are owned by each address (owner)
+    mapping(bytes32 => bool) private isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
 
-    address[] public providersWithSpace; // array has been added to store the addresses of storage providers who still have space available for new files
-    address[] public providersStoring; // array has been added to store the addresses of storage providers currently storing any shards
+    address[] private providersWithSpace; // array has been added to store the addresses of storage providers who still have space available for new files
+    address[] private providersStoring; // array has been added to store the addresses of storage providers currently storing any shards
 
-    uint256 public shardCounter;
-    uint256 public rewardAmount;
+    uint256 private shardCounter;
+    uint256 private rewardAmount;
 
-    event ShardStored(uint256 shardId, address storageProvider);
-    event ShardAudited(uint256 shardId, address storageProvider, bool valid);
-    event ShardDeleted(uint256 shardId);
+    event ShardStored(bytes32 shardId, address storageProvider);
+    event ShardAudited(bytes32 shardId, address storageProvider, bool valid);
+    event ShardDeleted(bytes32 shardId);
     event RewardPaid(address storageProvider, uint256 amount);
     event FileUploaded(address indexed owner, bytes32 fileHash);
     event StorageProviderAdded(address indexed storageProvider);
@@ -107,7 +107,7 @@ contract DistributedStorage {
     //     shardCounter++;
     // }
 
-    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds) external {
+    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, bytes32[] memory _shardIds) external {
         require(!doesFileExist(_fileHash), "File already exists");
         require(bytes(_ownerName).length > 0, "Owner name must be provided");
         require(bytes(_fileName).length > 0, "File name must be provided");
@@ -124,7 +124,7 @@ contract DistributedStorage {
         File storage fileToDelete = filesByHash[_fileHash];
         require(msg.sender == fileToDelete.owner, "Only the file owner can delete the file");
 
-        uint256[] storage fileShardIds = filesByHash[_fileHash].shardIds;
+        bytes32[] storage fileShardIds = filesByHash[_fileHash].shardIds;
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             emit ShardDeleted(fileShardIds[i]);//this is listened for by CloudyStorageMain.py
             delete shards[fileShardIds[i]];
@@ -145,7 +145,7 @@ contract DistributedStorage {
     }
 
     // Function assigns a storage provider to a new shard, or reassigns existing shard to new storage provider
-    function assignShardToStorageProvider(uint256 _shardId, address _storageProvider) external {
+    function assignShardToStorageProvider(bytes32 _shardId, address _storageProvider) external {
         //TODO: ensure we check the msg.sender (the storage provider holding this shard) is the one being assigned to it
         //require(shards[_shardId].exists, "Shard does not exist");
         require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
@@ -183,9 +183,9 @@ contract DistributedStorage {
     }
 
     // Function audits the storage providers by checking if they still hold the assigned shards and rewards them accordingly
-    function auditStorageProviders(uint256[] calldata _shardIds) external {
+    function auditStorageProviders(bytes32[] calldata _shardIds) external {
         for (uint256 i = 0; i < _shardIds.length; i++) {
-            uint256 shardId = _shardIds[i];
+            bytes32 shardId = _shardIds[i];
             Shard storage shard = shards[shardId];
             bool valid = isShardValid(shard.id);
 
@@ -206,7 +206,7 @@ contract DistributedStorage {
     }
 
     // Function is a placeholder for your specific shard validation logic. You can implement your own checks to determine if the storage provider still holds the shard.
-    function isShardValid(uint256 _shardId) internal view returns (bool) {
+    function isShardValid(bytes32 _shardId) internal view returns (bool) {
         Shard storage shard = shards[_shardId];
         return shard.exists;
     }
@@ -236,7 +236,7 @@ contract DistributedStorage {
 
         require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
-        providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
+        providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new bytes32[](0));
         providersWithSpace.push(msg.sender);
 
         emit StorageProviderAdded(msg.sender);
@@ -312,7 +312,7 @@ contract DistributedStorage {
     }  
 
     // Deletes a shard and its associated data.
-    function deleteShard(uint256 _shardId) external {
+    function deleteShard(bytes32 _shardId) external {
         require(shards[_shardId].exists, "Shard does not exist");
         Shard storage shardToDelete = shards[_shardId];
         address storageProviderAddress = shardToDelete.storageProvider;
@@ -320,7 +320,7 @@ contract DistributedStorage {
         require(msg.sender == storageProviderAddress, "Only the storage provider can delete the shard");
 
         // Delete the shard from the storage provider's list
-        uint256[] storage providerShards = storageProviderDetails.storedShardIds;
+        bytes32[] storage providerShards = storageProviderDetails.storedShardIds;
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (providerShards[i] == _shardId) {
                 providerShards[i] = providerShards[providerShards.length - 1];
@@ -331,7 +331,7 @@ contract DistributedStorage {
         }
 
         // Delete the shard from the file's list of shards
-        uint256[] storage fileShardIds = filesByHash[shardToDelete.fileHash].shardIds ; 
+        bytes32[] storage fileShardIds = filesByHash[shardToDelete.fileHash].shardIds ; 
         for (uint256 i = 0; i < fileShardIds.length; i++) {
             if (fileShardIds[i] == _shardId) {
                 fileShardIds[i] = fileShardIds[fileShardIds.length - 1];
@@ -352,7 +352,7 @@ contract DistributedStorage {
         emit ShardDeleted(_shardId);
     }
 
-    function auditShard(uint256 _shardId) external {
+    function auditShard(bytes32 _shardId) external {
         Shard storage shard = shards[_shardId];
         require(shard.exists, "Shard does not exist");
 
@@ -369,13 +369,13 @@ contract DistributedStorage {
         }
     }
 
-    function removeShardFromProvider(uint256 _shardId) internal {
+    function removeShardFromProvider(bytes32 _shardId) internal {
         Shard storage shard = shards[_shardId];
         address storageProviderAddress = shard.storageProvider;
         StorageProvider storage storageProviderDetails = providerDetails[storageProviderAddress];
 
         // Remove the shard from the storage provider's list
-        uint256[] storage providerShards = storageProviderDetails.storedShardIds;
+        bytes32[] storage providerShards = storageProviderDetails.storedShardIds;
         for (uint256 i = 0; i < providerShards.length; i++) {
             if (storageProviderDetails.storedShardIds[i] == _shardId) {
                 storageProviderDetails.storedShardIds[i] = storageProviderDetails.storedShardIds[storageProviderDetails.storedShardIds.length - 1];
@@ -417,7 +417,7 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool, uint256[] memory) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool, bytes32[] memory) {
         StorageProvider storage provider = providerDetails[_storageProvider];
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring, provider.storedShardIds);
     }
@@ -431,7 +431,7 @@ contract DistributedStorage {
         return ownerFiles[_owner];
     }
     
-    function getFilesShards(bytes32 _fileHash) external view returns (uint256[] memory) {
+    function getFilesShards(bytes32 _fileHash) external view returns (bytes32[] memory) {
         return filesByHash[_fileHash].shardIds ;
     }
 
@@ -479,7 +479,7 @@ contract DistributedStorage {
 
     
 
-    function getProviderStoredShards(address _storageProvider) external view returns (uint256[] memory) {
+    function getProviderStoredShards(address _storageProvider) external view returns (bytes32[] memory) {
         return providerDetails[_storageProvider].storedShardIds;
     }
 
