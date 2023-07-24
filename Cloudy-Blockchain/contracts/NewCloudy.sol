@@ -52,7 +52,7 @@ contract DistributedStorage {
 
     constructor() {
         shardCounter = 1;
-        rewardAmount = 0.00001 ether; // Set the initial reward amount
+        rewardAmount = 1 ether; // Set the initial reward amount
     }
 
     // Function allows users to upload a file by providing its hash
@@ -116,18 +116,8 @@ contract DistributedStorage {
         filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, _shardIds, true);
         ownerFiles[msg.sender].push(_fileHash);
         isFileBeingStored[_fileHash] = true;
-        for (uint256 i = 0; i < _shardIds.length; i++) {
-            uint256 shardId = _shardIds[i];
-            createShard(shardId, _fileHash);
-        }
-        emit FileUploaded(msg.sender, _fileHash);
-    }
 
-    function createShard(uint256 shardId, bytes32 _fileHash) internal
-    {
-        shards[shardId] = Shard(shardId, address(0), block.timestamp, _fileHash, true);
-        filesByHash[_fileHash].shardIds.push(shardId); 
-        shardCounter++;
+        emit FileUploaded(msg.sender, _fileHash);
     }
 
     function deleteFile(bytes32 _fileHash) external {
@@ -181,6 +171,7 @@ contract DistributedStorage {
 
             shards[_shardId].storageProvider = _storageProvider;
             newProviderShards.push(_shardId);
+            providerDetails[_storageProvider].storedShardIds.push(_shardId);
 
             // shards[_shardId].storageProvider = _storageProvider;
             // shardsHeldBystorageProvider[_storageProvider].push(_shardId);
@@ -426,9 +417,9 @@ contract DistributedStorage {
     }
 
     // Function allows users to retrieve the details of a specific storage provider by providing their address
-    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool) {
+    function getStorageProviderDetails(address _storageProvider) external view returns (string memory, address, uint256, uint256, bool, uint256[] memory) {
         StorageProvider storage provider = providerDetails[_storageProvider];
-        return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring);
+        return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring, provider.storedShardIds);
     }
     
     function getFileDetails(bytes32 _fileHash) external view returns (address, string memory, string memory, bytes32) {
