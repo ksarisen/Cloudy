@@ -15,7 +15,6 @@ contract DistributedStorage {
     struct Shard {
         uint256 id;
         address storageProvider;
-        uint256 timestamp;
         bytes32 fileHash;
         bool exists;
     }
@@ -29,17 +28,17 @@ contract DistributedStorage {
         uint256[] storedShardIds; // mapping that associates each storage provider wallet address with the shards they hold.
     }
 
-    mapping(uint256 => Shard) public shards; // mapping that stores all the shards by their ID.
-    mapping(bytes32 => File) public filesByHash; // Updated to use file hash as key
-    mapping(address => StorageProvider) public providerDetails;
-    mapping(address => bytes32[]) public ownerFiles; // mapping has been added to track which files are owned by each address (owner)
-    mapping(bytes32 => bool) public isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
+    mapping(uint256 => Shard) private shards; // mapping that stores all the shards by their ID.
+    mapping(bytes32 => File) private filesByHash; // Updated to use file hash as key
+    mapping(address => StorageProvider) private providerDetails;
+    mapping(address => bytes32[]) private ownerFiles; // mapping has been added to track which files are owned by each address (owner)
+    mapping(bytes32 => bool) private isFileBeingStored; // mapping is used to track the existence of a file based on its file hash
 
-    address[] public providersWithSpace; // array has been added to store the addresses of storage providers who still have space available for new files
-    address[] public providersStoring; // array has been added to store the addresses of storage providers currently storing any shards
+    address[] private providersWithSpace; // array has been added to store the addresses of storage providers who still have space available for new files
+    address[] private providersStoring; // array has been added to store the addresses of storage providers currently storing any shards
 
-    uint256 public shardCounter;
-    uint256 public rewardAmount;
+    uint256 private shardCounter;
+    uint256 private rewardAmount;
 
     event ShardStored(uint256 shardId, address storageProvider);
     event ShardAudited(uint256 shardId, address storageProvider, bool valid);
@@ -107,12 +106,25 @@ contract DistributedStorage {
     //     shardCounter++;
     // }
 
-    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds) external {
+    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256 _shardCount) external {
         require(!doesFileExist(_fileHash), "File already exists");
         require(bytes(_ownerName).length > 0, "Owner name must be provided");
         require(bytes(_fileName).length > 0, "File name must be provided");
+        require(_shardCount > 0, "Shard count must be greater than zero");
 
-        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, _shardIds, true);
+        uint256 numShards = _shardCount;
+        uint256[] memory shardIds = new uint256[](numShards);
+
+        for (uint256 i = 0; i < numShards; i++) {
+            
+            // Use shardCounter as the unique shard ID
+            uint256 shardId = shardCounter;
+            shards[shardId] = Shard(shardId, address(0), _fileHash, true);
+            shardIds[i] = shardId;
+            shardCounter++;
+        }
+        
+        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
         ownerFiles[msg.sender].push(_fileHash);
         isFileBeingStored[_fileHash] = true;
 
