@@ -21,18 +21,16 @@ import CryptoJS from 'crypto-js';
 
 export const Home = (props) => {
     const [file, setFile] = useState('');
-    // store uploaded files
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0xF7fb4e91bE2587148BB651d892D87a1E1F334cfE"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0xF93413db632D4B28cc27CFF31DD3979F529B273d"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
 
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
 
     const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
-    fetchUploadedFiles();
 
     // Use the web3 instance in your code
     async function checkHosting() {
@@ -84,11 +82,7 @@ export const Home = (props) => {
         event.preventDefault();
         checkHosting(); // confirm the blockchain is connected, for debugging only.
         uploadFile(file);
-        fetchUploadedFiles();
     }
-
-
-
 
     //     //TODO: Encrypt file using AES
     // function encryptFile(file, encryptionKey) {
@@ -114,28 +108,34 @@ export const Home = (props) => {
     // }
 
 
-    // Function to fetch uploaded files from the blockchain contract
-    async function fetchUploadedFiles() {
-        try {
-            // Get the first account from Ganache
-            const accounts = await web3.eth.getAccounts();
-            const sender = accounts[0];
 
-            // Call the blockchain contract function to fetch the uploaded files list of filehashes
-            // TODO: Figure out how to get the name of the filehashes
-            const uploadedFiles = await cloudyContract.methods.getOwnerFiles(sender).call({ from: sender });
+    // async function fetchUploadedFiles() {
+    //     try {
+    //       // Get the first account from Ganache
+    //       const accounts = await web3.eth.getAccounts();
+    //       const sender = accounts[0];
 
-            // Update the state with the fetched files
-            setUploadedFiles(uploadedFiles);
-        } catch (error) {
-            console.error('Failed to fetch uploaded files:', error);
-        }
-    }
+    //       // Fetch the uploaded files from the blockchain
+    //       const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
+    //       const fileCount = await cloudyContract.methods.getFileCount().call({ from: sender });
 
-    // useEffect hook to fetch uploaded files when the component mounts
-    useEffect(() => {
-        fetchUploadedFiles();
-    }, []);
+    //       const files = [];
+    //       for (let i = 0; i < fileCount; i++) {
+    //         const fileHash = await cloudyContract.methods.getFileHash(i).call({ from: sender });
+    //         const fileName = await cloudyContract.methods.getFileName(fileHash).call({ from: sender });
+    //         const fileUploadDate = await cloudyContract.methods.getFileUploadDate(fileHash).call({ from: sender });
+    //         files.push({ fileHash, fileName, fileUploadDate });
+    //       }
+
+    //       setUploadedFiles(files);
+    //     } catch (error) {
+    //       console.error('Failed to fetch uploaded files:', error);
+    //     }
+    //   }
+
+    //   useEffect(() => {
+    //     fetchUploadedFiles();
+    //   }, []);
 
 
     function splitFile(file, numSlices) {
@@ -269,9 +269,6 @@ export const Home = (props) => {
             }
     
             if (successfulUpload) {
-
-                // TODO: Change to send the owner's wallet address instead
-
                 const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender, gas: 500000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
                 console.log("response to uploadFile():", response);
             }
@@ -305,73 +302,10 @@ export const Home = (props) => {
             console.error('Failed to upload file:', error);
         }
     }
-
     function cleanUpIPsArray(ipsArray) {
         //removes singel quotes added around solidity strings in arrays
         return ipsArray.map((ip) => ip.replace(/'/g, ''));
     }
-
-
-    // Function to delete the file and its shards
-    async function handleDelete(fileHash) {
-        try {
-            // Get the first account from Ganache
-            const accounts = await web3.eth.getAccounts();
-            const sender = accounts[0];
-
-            // Call the blockchain contract function to delete the file and its shards
-            const response = await cloudyContract.methods.deleteFile(fileHash).send({ from: sender, gas: 500000 });
-
-            console.log("Response to handleDelete():", response);
-
-            // After successful deletion, fetch the updated list of uploaded files
-            fetchUploadedFiles();
-        } catch (error) {
-            console.error('Failed to delete file:', error);
-        }
-    }
-
-    async function handleDownload(fileHash) {
-        try {
-            // Get the first account from Ganache
-            const accounts = await web3.eth.getAccounts();
-            const sender = accounts[0];
-
-            // Call the blockchain contract function to get the shard IDs of the file
-            const shardIds = await cloudyContract.methods.getFilesShards(fileHash).call({ from: sender });
-
-            // Retrieve the shards from storage providers and reconstruct the file
-            const fileData = await fetchAndCombineShards(shardIds);
-
-            // Convert the fileData to a Blob
-            const blob = new Blob([fileData]);
-
-            // Create a download link for the file
-            const downloadLink = document.createElement('a');
-            downloadLink.href = URL.createObjectURL(blob);
-            downloadLink.download = "downloaded_file"; // Change the name of the downloaded file here (if needed)
-            downloadLink.click();
-        } catch (error) {
-            console.error('Failed to download file:', error);
-        }
-    }
-
-    async function fetchAndCombineShards(shardIds) {
-        // Assuming you have an API endpoint to fetch shards from storage providers
-        // Combine the shards to reconstruct the original file
-        // For demonstration purposes, we will simply concatenate the shard data here.
-        let combinedData = '';
-
-        for (const shardId of shardIds) {
-            const endpoint = `${storageProviderIP}/${shardId}`; // Replace with your storage provider's API endpoint
-            const response = await fetch(endpoint);
-            const shardData = await response.text();
-            combinedData += shardData;
-        }
-
-        return combinedData;
-    }
-
     // function generateShardId(shard) {
     //     const hash = crypto.createHash('sha256');
     //     hash.update(shard);
@@ -417,19 +351,18 @@ export const Home = (props) => {
                                 <th>Download</th>
                                 <th>Delete</th>
                             </tr>
-                            {/* TODO: type file may cause an error because of the bytes 32 address (filehash) that are being stored in uploaded files */}
                             {uploadedFiles.map((file) => (
                                 <tr key={file.fileHash}>
-                                    <td className="filename">{file.fileHash}</td>
+                                    <td className="filename">{file.fileName}</td>
                                     {/* <td>{file.fileUploadDate}</td> */}
                                     <td>
-                                        <a className='download-button'onClick={() => handleDownload(file.fileHash)} >
+                                        <a className='download-button'>
                                             {/* <a className='download-button' onClick={() => handleDownload(file.fileHash, encryptionKey)}> */}
                                             Download
                                         </a>
                                     </td>
                                     <td>
-                                        <a className='delete-button' onClick={() => handleDelete(file.fileHash)}>
+                                        <a className='delete-button'>
                                             {/* <a className='delete-button' onClick={() => handleDelete(file.fileHash)}> */}
                                             Delete
                                         </a>

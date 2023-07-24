@@ -16,10 +16,6 @@ CORS(app,origins=["http://localhost:3000"])
 
 app.debug = True
 
-@app.before_first_request
-def setup():
-    # This function will be executed before any request hits an endpoint
-    print("Flask server is starting...")
 
 def get_ABI():
     # Get path to contractabi.json
@@ -42,23 +38,6 @@ wallet_address = os.getenv('WALLET_ADDRESS')
 available_storage_bytes = 0 # this value is set properly in set_blockchain_endpoint
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
-
-
-@app.before_first_request
-def set_blockchain_endpoint():
-    print("pog")
-    global available_storage_bytes, wallet_address
-    #NOTE this is untested!
-    storage_provider_ip = request.host.split(':')[0] #e.g. 127.0.0.1
-    #storage_provider_ip = ip_to_hex(storage_provider_ip) # e.g. 0x000000000000000000000000000000000000000000000000000000007f000001
-    
-    available_storage_bytes = max_stored_bytes - count_storage_bytes_in_use()
-
-    try:
-        response = cloudySmartContract.functions.addStorageProvider(storage_provider_ip, wallet_address, available_storage_bytes).call()
-        print(f"Successfully Initialized storage provider at {storage_provider_ip}")
-    except Exception as e:
-        print(f"Error: {e}")
 
 # app._got_first_request = False
 # if not app._got_first_request:
@@ -111,6 +90,7 @@ def upload_shards():
                 response_str = f"Unable to find shardId of shard {shard_name}"
                 return jsonify({'error': response_str}), 400
             response = cloudySmartContract.functions.assignShardToStorageProvider(shardId, wallet_address).call()
+            print(jsonify(response))
             #TODO: check if storageProvider is now full. if so, take it off the blockchain list of availableProviders
             
 

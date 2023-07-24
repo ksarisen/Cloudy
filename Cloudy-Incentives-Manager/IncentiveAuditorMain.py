@@ -63,6 +63,17 @@ def audit_storage_providers_loop():
             if len(storageProvidersToAudit) > 0:
                 # get all shardIDs
                 print("Selecting all currently stored shard IDs...")
+                storageProvidersToAudit = [
+                    {
+                        'providerName': providerData[0],
+                        'providerAddress': providerData[1],
+                        'providerMaxStorage': providerData[2],
+                        'providerUsedStorage': providerData[3],
+                        'providerIsActive': providerData[4],
+                        'storedShardIds': providerData[5],
+                    }
+                    for providerData in storageProvidersToAudit
+                ]
                 shardIdsToAudit = selectAllStoredShards(storageProvidersToAudit)
                 
                 #Kerem's on-blockchain audit version wants to audit all the shards, so commenting out Ben's function getting a random subset of shards per audit.
@@ -118,9 +129,8 @@ def audit_storage_providers_loop():
         except requests.RequestException as e:
             print('Error occurred during StorageProvider audit:', e)
         randomAuditInterval = random_seconds()
-        print("Now waiting for " +randomAuditInterval+ " seconds...")
+        print("Now waiting for " +str(randomAuditInterval)+ " seconds...")
         time.sleep(randomAuditInterval)  # Sleep for 5 minutes (300 seconds)
-        print('Error occurred during StorageProvider audit:', e)
 
 def random_seconds():
     # Determine the maximum number of intervals (15 seconds each) up to 500 seconds
@@ -146,7 +156,7 @@ def selectRandomShardsToAudit(storageProviders, numShards):
     return selectedShardIds
 
 def selectAllStoredShards(storageProviders):
-     # Combine all storedShardIds from all storage providers into a single list
+    # Combine all storedShardIds from all storage providers into a single list
     allStoredShardIds = [shardId for storageProvider in storageProviders for shardId in storageProvider['storedShardIds']]
     return allStoredShardIds
 

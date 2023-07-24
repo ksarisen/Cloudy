@@ -458,19 +458,23 @@ contract DistributedStorage {
     // Access the data of StorageProviders whose addresses are in providersStoring
     // The function is used by the incentiveAuditor
     function getStorageProviderDataOfProvidersCurrentlyStoringShards() external view returns (StorageProvider[] memory) {
-        uint256 providersCount = providersStoring.length;
-        if (providersCount == 0) {
-            // Return an empty array if there are no storage providers
-            return new StorageProvider[](0);
-        }
+        uint256 length = providersStoring.length;
+        StorageProvider[] memory providerDetailsArray = new StorageProvider[](length);
 
-        StorageProvider[] memory providersData = new StorageProvider[](providersCount);
-
-        for (uint256 i = 0; i < providersCount; i++) {
+        for (uint256 i = 0; i < length; i++) {
             address providerAddress = providersStoring[i];
-            providersData[i] = providerDetails[providerAddress]; //actually access the data stored in the associated StorageProvider struct
+            StorageProvider memory provider = providerDetails[providerAddress];
+            providerDetailsArray[i] = StorageProvider({
+                ip: provider.ip,
+                walletAddress: provider.walletAddress,
+                availableStorageSpace: provider.availableStorageSpace,
+                maximumStorageSize: provider.maximumStorageSize,
+                isStoring: provider.isStoring,
+                storedShardIds: provider.storedShardIds
+            });
         }
-        return providersData;
+
+        return providerDetailsArray;
     }
 
     

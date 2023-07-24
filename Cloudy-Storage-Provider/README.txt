@@ -56,5 +56,4 @@ http://127.0.0.1:5002/upload
 
 TODOS:
 Ensure the max storage limit is tracked and enforced.
-connect to the blockchain to track available shards
 Ensure only actual owner can delete relevant shards via a view external check the Provider can hit in the storage contract.
