@@ -25,7 +25,7 @@ export const Home = (props) => {
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0xF93413db632D4B28cc27CFF31DD3979F529B273d"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0xee2F40e190BEdE985403c37152C860bb2e8cfEb3"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
 
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
@@ -234,10 +234,15 @@ export const Home = (props) => {
                 // const shardID = generateShardId(shards[i]);
             const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
             
+
+            // call upload file first and will return a series of new shard IDs.
             const formData = new FormData();
+            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, 1).send({ from: sender, gas: 500000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
+            console.log("response to uploadFile():", response);
+
             shards.forEach((shard, index) => {
                 //TODO: ensure fileName isnt just "blob"
-                const shardName = `shard_${index}_of_file_${fileName}`;
+                const shardName = `shard_${response.shardIDs[index]}_of_file_${fileName}`;
                 formData.append(shardName, shard);
                 console.log("formData of shard being sent:")
                 console.log(formData)
@@ -255,7 +260,7 @@ export const Home = (props) => {
                         // shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
                         console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
                         successfulUpload = true;
-                        shardIDs.push(shardID);
+                        shardIDs.push(shardName);
                     } else {
                         throw new Error('Failed to upload shard');
                     }
@@ -267,11 +272,7 @@ export const Home = (props) => {
                     console.error('Error uploading shard:', error);
                 }
             }
-    
-            if (successfulUpload) {
-                const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, shardIDs).send({ from: sender, gas: 500000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
-                console.log("response to uploadFile():", response);
-            }
+
     
             // const response = await cloudyContract.methods._storeFile(_filehash).send({ from: sender,  gas: 500000 });
         // console.log("response: " + response);
@@ -306,12 +307,26 @@ export const Home = (props) => {
         //removes singel quotes added around solidity strings in arrays
         return ipsArray.map((ip) => ip.replace(/'/g, ''));
     }
-    // function generateShardId(shard) {
-    //     const hash = crypto.createHash('sha256');
-    //     hash.update(shard);
-    //     const shardId = hash.digest('hex');
-    //     return shardId;
-    // }
+
+
+    function generateShardId(shard) {
+        const hash = crypto.createHash('sha256');
+        hash.update(shard);
+        const shardId = hash.digest('hex');
+        shardId = convertToBytes32(shardId);
+        return shardId;
+    }
+
+    function convertToBytes32(hexString) {
+        const hex = hexString.replace('0x', ''); // Remove '0x' prefix if present
+        const uint8Array = new Uint8Array(hex.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+        
+        // If the hash is less than 32 bytes, pad the array with zeros at the beginning
+        const bytes32 = new Uint8Array(32);
+        bytes32.set(uint8Array, bytes32.length - uint8Array.length);
+        
+        return bytes32;
+    }
 
 
     return (
