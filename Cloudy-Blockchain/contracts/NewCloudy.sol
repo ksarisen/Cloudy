@@ -14,14 +14,14 @@ contract DistributedStorage {
 
     struct Shard {
         uint256 id;
-        address storageProvider;
+        address payable storageProvider;
         bytes32 fileHash;
         bool exists;
     }
     
     struct StorageProvider {
         string ip; //TODO: update this to bytes32 then write js converters from string to bytes32 to use in Home.jsx, and python converters from string to bytes32 to use in andIncentiveAuditorMain.py
-        address walletAddress;
+        address payable walletAddress;
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
         bool isStoring;
@@ -48,9 +48,9 @@ contract DistributedStorage {
     event StorageProviderAdded(address indexed storageProvider);
     event StorageProviderDeleted(address indexed storageProvider);
 
-    constructor() {
+    constructor () {
         shardCounter = 1;
-        rewardAmount = 0.00001 ether; // Set the initial reward amount
+        rewardAmount = 0.10 ether; // Set the initial reward amount
     }
 
     // Function allows users to upload a file by providing its hash
@@ -119,7 +119,7 @@ contract DistributedStorage {
             
             // Use shardCounter as the unique shard ID
             uint256 shardId = shardCounter;
-            shards[shardId] = Shard(shardId, address(0), _fileHash, true);
+            shards[shardId] = Shard(shardId, payable(address(0)), _fileHash, true);
             shardIds[i] = shardId;
             shardCounter++;
         }
@@ -157,9 +157,9 @@ contract DistributedStorage {
     }
 
     // Function assigns a storage provider to a new shard, or reassigns existing shard to new storage provider
-    function assignShardToStorageProvider(uint256 _shardId, address _storageProvider) external {
+    function assignShardToStorageProvider(uint256 _shardId, address payable _storageProvider) external {
         //TODO: ensure we check the msg.sender (the storage provider holding this shard) is the one being assigned to it
-        //require(shards[_shardId].exists, "Shard does not exist");
+        require(shards[_shardId].exists, "Shard does not exist");
         require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
 
         address currentProviderAddress = shards[_shardId].storageProvider;
@@ -195,7 +195,7 @@ contract DistributedStorage {
     }
 
     // Function audits the storage providers by checking if they still hold the assigned shards and rewards them accordingly
-    function auditStorageProviders(uint256[] calldata _shardIds) external {
+    function auditStorageProviders(uint256[] calldata _shardIds) external payable{
         for (uint256 i = 0; i < _shardIds.length; i++) {
             uint256 shardId = _shardIds[i];
             Shard storage shard = shards[shardId];
@@ -204,7 +204,19 @@ contract DistributedStorage {
             emit ShardAudited(shardId, shard.storageProvider, valid);
 
             if (valid) {
-                payReward(shard.storageProvider);
+                require(rewardAmount > 0, "Amount must be greater than 0");
+                
+                // Way 1:
+                // shard.storageProvider.transfer(rewardAmount);
+
+                // Call returns a boolean value indicating success or failure.
+                // This is the current recommended method to use.
+
+                // Way 2:
+                (bool sent, ) = shard.storageProvider.call{value: rewardAmount}("");
+                require(sent, "Failed to send Ether");
+                
+                emit RewardPaid(shard.storageProvider, rewardAmount);
             }
         }
     }
@@ -224,14 +236,14 @@ contract DistributedStorage {
     }
 
     // Function transfers the reward amount to the storage provider if the shard is valid
-    function payReward(address _storageProvider) internal {
-        require(address(this).balance >= rewardAmount, "Insufficient contract balance");
+    // function payReward(address _storageProvider) internal {
+    //     //require(address(this).balance >= rewardAmount, "Insufficient contract balance");
 
-        (bool success, ) = _storageProvider.call{value: rewardAmount}("");
-        require(success, "Reward payment failed");
+    //     (bool success, ) = _storageProvider.call{value: rewardAmount}("");
+    //     require(success, "Reward payment failed");
 
-        emit RewardPaid(_storageProvider, rewardAmount);
-    }
+    //     emit RewardPaid(_storageProvider, rewardAmount);
+    // }
 
     // Function allows updating the reward amount
     function updateRewardAmount(uint256 _newRewardAmount) external {
@@ -242,16 +254,16 @@ contract DistributedStorage {
     // If you need to update these values externally, you can change the visibility to external and add appropriate access control mechanisms to protect them.
 
     // Function allows storage providers to register themselves and provide their IP, wallet address, available storage space, and maximum storage size
-    function addStorageProvider(string memory _ip, address _walletAddress, uint256 _maximumStorageSize) external {
+    function addStorageProvider(string memory _ip, address payable _walletAddress, uint256 _maximumStorageSize) external {
         //what can we use for ip addresses? e.g. "127.0.0.1"  cant figure out how to send _ip as bytes32 using python
         //send it without a type, then pack/unpack.
 
-        require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
+        require(!providerDetails[_walletAddress].isStoring, "Storage provider already exists");
 
-        providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
-        providersWithSpace.push(msg.sender);
+        providerDetails[_walletAddress] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));
+        providersWithSpace.push(_walletAddress);
 
-        emit StorageProviderAdded(msg.sender);
+        emit StorageProviderAdded(_walletAddress);
     }
 
     // Function allows updating the storage status of a provider, marking them as either storing or not storing any shards
@@ -364,22 +376,22 @@ contract DistributedStorage {
         emit ShardDeleted(_shardId);
     }
 
-    function auditShard(uint256 _shardId) external {
-        Shard storage shard = shards[_shardId];
-        require(shard.exists, "Shard does not exist");
+    // function auditShard(uint256 _shardId) external {
+    //     Shard storage shard = shards[_shardId];
+    //     require(shard.exists, "Shard does not exist");
 
-        bool isValid = isShardValid(_shardId);
+    //     bool isValid = isShardValid(_shardId);
 
-        emit ShardAudited(_shardId, shard.storageProvider, isValid);
+    //     emit ShardAudited(_shardId, shard.storageProvider, isValid);
 
-        if (isValid) {
-            // Reward the storage provider
-            payReward(shard.storageProvider);
-        } else {
-            // Remove the shard from the storage provider
-            removeShardFromProvider(_shardId);
-        }
-    }
+    //     if (isValid) {
+    //         // Reward the storage provider
+    //         payReward(shard.storageProvider);
+    //     } else {
+    //         // Remove the shard from the storage provider
+    //         removeShardFromProvider(_shardId);
+    //     }
+    // }
 
     function removeShardFromProvider(uint256 _shardId) internal {
         Shard storage shard = shards[_shardId];
@@ -434,9 +446,9 @@ contract DistributedStorage {
         return (provider.ip, provider.walletAddress, provider.availableStorageSpace, provider.maximumStorageSize, provider.isStoring, provider.storedShardIds);
     }
     
-    function getFileDetails(bytes32 _fileHash) external view returns (address, string memory, string memory, bytes32) {
+    function getFileDetails(bytes32 _fileHash) external view returns (address, string memory, string memory, bytes32, uint256[] memory) {
         File storage file = filesByHash[_fileHash];
-        return (file.owner, file.ownerName, file.fileName, file.fileHash);
+        return (file.owner, file.ownerName, file.fileName, file.fileHash, file.shardIds);
     }
     
     function getOwnerFiles(address _owner) external view returns (bytes32[] memory) {
