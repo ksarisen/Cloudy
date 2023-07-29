@@ -25,7 +25,7 @@ export const Home = (props) => {
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0xee2F40e190BEdE985403c37152C860bb2e8cfEb3"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0xaC85AE6B131e424a4275e57BBaC38097052ECb80"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
 
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
@@ -57,14 +57,14 @@ export const Home = (props) => {
 
     //turn the filename into a unique hashed id for the file
     //TODO: handle two files with the same name
-    async function stringToBytes20(inputString) {
+    async function stringToBytes32(inputString) {
         const encoder = new TextEncoder();
         const data = encoder.encode(inputString);
 
         const hashBuffer = await crypto.subtle.digest('SHA-1', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-        const desiredLength = 20;
+        const desiredLength = 32; // 32 bytes * 2 characters per byte (since it's a hexadecimal string)
 
         if (hashArray.length < desiredLength) {
             const padding = Array(desiredLength - hashArray.length).fill(0);
@@ -73,8 +73,8 @@ export const Home = (props) => {
             hashArray.splice(desiredLength);
         }
 
-        const bytes20Hash = '0x' + hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-        return bytes20Hash;
+        const bytes32Hash = '0x' + hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+        return bytes32Hash;
     }
 
 
@@ -156,8 +156,8 @@ export const Home = (props) => {
     async function uploadFile(file) {
         try {
             const fileName = file.name;
-            // TODO: Please change the way we hash stringToBytes20  
-            const _filehash = await stringToBytes20(fileName);
+            // TODO: Please change the way we hash stringToBytes32  
+            const _filehash = await stringToBytes32(fileName);
 
             // TODO: Encrypt the file
 
@@ -177,7 +177,7 @@ export const Home = (props) => {
             try {
                 gasEstimateForUpload = await cloudyContract.methods
                   .getIPsOfStorageProvidersWithSpace()
-                  .estimateGas({ from: sender });
+                  .estimateGas({ from: sender, gas: 500000 });
               } catch (error) {
                 console.error("ContractExecutionError:", error);
               }
@@ -231,22 +231,31 @@ export const Home = (props) => {
                     storageProviderIndex = i % storageProvidersWithSpace.length;
                 }
                 const shardID = i;
-                // const shardID = generateShardId(shards[i]);
+                // const shardID = generateShardId(shards[i]); //To be used once we confirm hashing shards works. for now shards will be globally unique ints from the blockchain's shardCounter
             const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
             
 
             // call upload file first and will return a series of new shard IDs.
+            //TODO: estimate the gas as we did above instead of using gas: 5000000
             const formData = new FormData();
-            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, 1).send({ from: sender, gas: 500000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
+            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, 1).send({ from: sender, gas: 5000000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
             console.log("response to uploadFile():", response);
 
-            shards.forEach((shard, index) => {
-                //TODO: ensure fileName isnt just "blob"
-                const shardName = `shard_${response.shardIDs[index]}_of_file_${fileName}`;
-                formData.append(shardName, shard);
-                console.log("formData of shard being sent:")
-                console.log(formData)
-            });
+            //TODO: handle case where file has previously been uploaded and is a duplicate.
+            const shardIdResponse = await cloudyContract.methods.getFilesShards(_filehash).call({ from: sender, gas: 5000000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
+            var shardName
+            if (shardIdResponse?.shardIDs) {
+                shards.forEach((shard, index) => {
+                    shardName = `shard_${shardIdResponse[index]}_of_file_${fileName}`;
+                    formData.append(shardName, shard);
+                    console.log("formData of shard being sent:")
+                    console.log(formData)
+                });
+            }
+            else{
+               console.log("No shards returned!");
+               console.log(shardIdResponse );
+            }
     
                 try {
                     const response = await fetch(endpoint, {
@@ -256,9 +265,9 @@ export const Home = (props) => {
                     });
     
                     if (response.ok) {
-                        console.log('Shard uploaded successfully');
+                        console.log('Shards uploaded successfully');
                         // shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
-                        console.log(`Storing shard ${i} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
+                        console.log(`Storing shards ${formData} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
                         successfulUpload = true;
                         shardIDs.push(shardName);
                     } else {

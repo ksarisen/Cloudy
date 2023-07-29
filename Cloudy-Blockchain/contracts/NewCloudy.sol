@@ -24,7 +24,7 @@ contract DistributedStorage {
         address walletAddress;
         uint256 availableStorageSpace;  // Tracking in bytes
         uint256 maximumStorageSize;     // Tracking in bytes
-        bool isStoring;
+        bool isStoring; //Boolean that measures whether storage provider has been added to the Cloudy system regardless of whether it is actually storing any files. TODO: rename this
         uint256[] storedShardIds; // mapping that associates each storage provider wallet address with the shards they hold.
     }
 
@@ -106,30 +106,31 @@ contract DistributedStorage {
     //     shardCounter++;
     // }
 
-    function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256 _shardCount) external {
-        require(!doesFileExist(_fileHash), "File already exists");
-        require(bytes(_ownerName).length > 0, "Owner name must be provided");
-        require(bytes(_fileName).length > 0, "File name must be provided");
-        require(_shardCount > 0, "Shard count must be greater than zero");
 
-        uint256 numShards = _shardCount;
-        uint256[] memory shardIds = new uint256[](numShards);
+function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256 _shardCount) external returns (uint256[] memory) {
+    require(!doesFileExist(_fileHash), "File already exists");
+    require(bytes(_ownerName).length > 0, "Owner name must be provided");
+    require(bytes(_fileName).length > 0, "File name must be provided");
+    require(_shardCount > 0, "Shard count must be greater than zero");
 
-        for (uint256 i = 0; i < numShards; i++) {
-            
-            // Use shardCounter as the unique shard ID
-            uint256 shardId = shardCounter;
-            shards[shardId] = Shard(shardId, address(0), _fileHash, true);
-            shardIds[i] = shardId;
-            shardCounter++;
-        }
-        
-        filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
-        ownerFiles[msg.sender].push(_fileHash);
-        isFileBeingStored[_fileHash] = true;
+    uint256 numShards = _shardCount;
+    uint256[] memory shardIds = new uint256[](numShards);
 
-        emit FileUploaded(msg.sender, _fileHash);
+    for (uint256 i = 0; i < numShards; i++) {
+        // Use shardCounter as the unique shard ID
+        uint256 shardId = shardCounter;
+        shards[shardId] = Shard(shardId, address(0), _fileHash, true);
+        shardIds[i] = shardId;
+        shardCounter++;
     }
+
+    filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
+    ownerFiles[msg.sender].push(_fileHash);
+    isFileBeingStored[_fileHash] = true;
+    emit FileUploaded(msg.sender, _fileHash);
+    // Return the array of shardIds so the frontend has access to the gloablly unique shardIds assigned to its shards
+    return shardIds;
+}
 
     function deleteFile(bytes32 _fileHash) external {
         require(isFileBeingStored[_fileHash] = true, "File does not exist");
@@ -229,6 +230,7 @@ contract DistributedStorage {
 
         (bool success, ) = _storageProvider.call{value: rewardAmount}("");
         require(success, "Reward payment failed");
+        //TODO: if file owner can't pay, make sure storage provider knows to stop storing the related shards
 
         emit RewardPaid(_storageProvider, rewardAmount);
     }
@@ -245,7 +247,7 @@ contract DistributedStorage {
     function addStorageProvider(string memory _ip, address _walletAddress, uint256 _maximumStorageSize) external {
         //what can we use for ip addresses? e.g. "127.0.0.1"  cant figure out how to send _ip as bytes32 using python
         //send it without a type, then pack/unpack.
-
+        require (msg.sender == _walletAddress, "only the storage provider can add themselves to the system. please make sure your wallet address matches the one being passed in.");
         require(!providerDetails[msg.sender].isStoring, "Storage provider already exists");
 
         providerDetails[msg.sender] = StorageProvider(_ip, _walletAddress, _maximumStorageSize, _maximumStorageSize, true, new uint256[](0));

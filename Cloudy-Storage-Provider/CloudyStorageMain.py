@@ -2,10 +2,11 @@
 #Benjamin Djukastein, created in part via ChatGPT prompts
 import os
 import json
+import sys
 from flask import Flask, abort, make_response, request, render_template, send_file, jsonify
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from web3 import Web3
+from web3 import Web3, exceptions
 from flask_cors import CORS
 
 import CloudyStorageFlaskServer  # Import the Flask app
@@ -46,18 +47,14 @@ def get_host_ip():
     s.close()
     return host_ip
 
-def get_storage_providers():
-    # Get the list of storage providers from the contract
-    storage_providers = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
-    print("Currently stored storage providers:")
-    for provider in storage_providers:
-        print(provider)
-    print("-------------------------")
-
 def set_blockchain_endpoint():
     global available_storage_bytes, wallet_address
 
     storage_provider_ip = "http://127.0.0.1"  # Replace this with the correct IP #"http://127.0.0.1:5002" 
+
+    #TODO: if the blockchain is inaccessible (Ben can't figure out the right conditional to check if thats true), then log an error and stop running
+    # print(str("Cannot connect to the smart contract, try making sure your contractAddress in the .env is up to date, and the contract is being hosted"))
+    # sys.exit(1)
 
     # Check if the storage provider already exists in the contract
     if wallet_address in cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call():
@@ -82,7 +79,6 @@ def set_blockchain_endpoint():
         # What happens when I restart this service?
         response = cloudySmartContract.functions.addStorageProvider(storage_provider_ip, wallet_address, uint256_storage).transact(transaction)
         print(f"Transaction successful. Response: {response}")
-        get_storage_providers()  # for debugging
     except Exception as e:
         #Unable to add storageProvider, likely due to it already having been added previously.
         print(f"Error: {e}")
@@ -114,6 +110,6 @@ if __name__ == '__main__':
     set_blockchain_endpoint()
 
     # Start the Flask server
-    CloudyStorageFlaskServer.app.run(port=5002) #/*debug=True,*/ 
+    CloudyStorageFlaskServer.app.run(port=5002, debug=False)
 
     

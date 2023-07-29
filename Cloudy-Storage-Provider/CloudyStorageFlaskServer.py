@@ -35,7 +35,7 @@ contract_address = os.getenv('CONTRACT_ADDRESS')
 local_storage_path = os.getenv('LOCAL_STORAGE_PATH')
 max_stored_bytes = int(os.getenv('MAX_STORAGE_IN_BYTES'))
 wallet_address = os.getenv('WALLET_ADDRESS')
-available_storage_bytes = 0 # this value is set properly in set_blockchain_endpoint
+available_storage_bytes = 1000000000 # this value is set properly in set_blockchain_endpoint
 
 cloudySmartContract = web3.eth.contract(address=contract_address, abi=contract_abi)
 
@@ -90,8 +90,10 @@ def upload_shards():
                 response_str = f"Unable to find shardId of shard {shard_name}"
                 return jsonify({'error': response_str}), 400
             response = cloudySmartContract.functions.assignShardToStorageProvider(shardId, wallet_address).call()
-            print(jsonify(response))
+            print(f"Successfully assigned shard {shardId} to storage provider {wallet_address}")
+            print(response)
             #TODO: check if storageProvider is now full. if so, take it off the blockchain list of availableProviders
+            get_storage_providers()  # for debugging
             
 
         response = make_response('Shards uploaded successfully')
@@ -168,26 +170,35 @@ def ip_to_hex(ip_address):
 # hex_value = ip_to_hex(ip_address)
 # print(hex_value)
 
-def hex_to_ip(hex_value):
-    # Remove the '0x' prefix from the hex_value
-    hex_value = hex_value[2:]
+#TODO: make this function return properly formatted IP.
+# def hex_to_ip(hex_value):
+#     # Remove the '0x' prefix from the hex_value
+#     hex_value = hex_value[2:]
     
-    # Split the hex value into 4 segments (each representing 8 bits or 2 bytes)
-    segments = [hex_value[i:i+8] for i in range(0, len(hex_value), 8)]
+#     # Split the hex value into 4 segments (each representing 8 bits or 2 bytes)
+#     segments = [hex_value[i:i+8] for i in range(0, len(hex_value), 8)]
     
-    # Convert each segment from hexadecimal to decimal
-    decimal_segments = [int(segment, 16) for segment in segments]
+#     # Convert each segment from hexadecimal to decimal
+#     decimal_segments = [int(segment, 16) for segment in segments]
     
-    # Convert the decimal segments into an IP address string
-    ip_address = ".".join(str(dec) for dec in decimal_segments)
+#     # Convert the decimal segments into an IP address string
+#     ip_address = ".".join(str(dec) for dec in decimal_segments)
     
-    return ip_address
+#     return ip_address
 
-# Example usage:
-hex_value = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
-ip_address = hex_to_ip(hex_value)
-print(ip_address)  # Output: "1.35.69.103.137.171.205.239.1.35.69.103.137.171.205.239"
+# # Example usage:
+# hex_value = "0x0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+# ip_address = hex_to_ip(hex_value)
+# print(ip_address)  # Output: "1.35.69.103.137.171.205.239.1.35.69.103.137.171.205.239"
 
+def get_storage_providers():
+    # Get the list of storage providers from the contract
+    storage_providers = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
+    print("Displaying all storage providers currently Storing Shards:")
+    for provider in storage_providers:
+        print(provider)
+    print("-------------------------")
+    return storage_providers
 
 def ip_to_hex(ip_address):
     # Split the IP address into 4 segments
@@ -287,5 +298,5 @@ if __name__ == '__main__':
     # import threading
     # event_listener_thread = threading.Thread(target=start_ShardDeleted_event_listener)
     # event_listener_thread.start()
-    app.run(host='0.0.0.0', port=5002)
+    app.run(host='0.0.0.0', port=5002, debug=False)
 
