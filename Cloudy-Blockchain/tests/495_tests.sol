@@ -35,8 +35,6 @@ contract ClientManagerTest /*is ClientManager*/{
 
     /// #sender: account-0
     function testAssignStorageProvider() public {
-        //This test confirms that assigning a shard to a storage provider actually works.
-
         //the sender is the wallet address passed in, aka account0
         address test = account0;
         address test2 = msg.sender;
@@ -48,13 +46,16 @@ contract ClientManagerTest /*is ClientManager*/{
             Assert.ok(false, "Unexpected error in addStorageProvider");
         }
 
-        try clientManager.uploadFile("ouldooz","myFileName",0x920f8f5815b381ea692e9e7c2f7119f2b1aa620a000000000000000000000000,1) {}
+        try clientManager.uploadFile("ouldooz","myFileName",0x920f8f5815b381ea692e9e7c2f7119f2b1aa620a000000000000000000000000,1) returns (uint256[] memory newShardIds) {
+            //expect the first shard to have id 1, expect only 1 shard to be created
+            Assert.ok(newShardIds[0] == 1, "New shard created with unexpected id, it should be 1.");
+        }
            catch Error(string memory reason) {
             //test case fails if we hit an error
             Assert.ok(false, reason);
         }
 
-        try clientManager.assignShardToStorageProvider(0,address(this)) {}
+        try clientManager.assignShardToStorageProvider(1,address(this)) {}
            catch Error(string memory reason) {
             //test case fails if we hit an error
             Assert.ok(false, reason);
@@ -65,14 +66,14 @@ contract ClientManagerTest /*is ClientManager*/{
         try clientManager.getStorageProviderDetails(address(this)) returns (string memory ip, address walletAddress, uint256 availableStorageSpace, uint256 maximumStorageSize, bool isStoring, uint256[] memory shardIds){
             //confirm shard 0 is in the storage provider
             uint256[] memory returnedShardIds =  shardIds;
-            bool shardId0Found = false;
+            bool shardIdFound = false;
             for (uint256 i = 0; i < returnedShardIds.length; i++) {
-                if (returnedShardIds[i] == 0) {
-                    shardId0Found = true;
+                if (returnedShardIds[i] == 1) {
+                    shardIdFound = true;
                     break;
                 }
             }
-            Assert.ok(shardId0Found, "Shard with ID 0 not found in returnedShardIds");
+            Assert.ok(shardIdFound, "Shard with ID 1 not found in returnedShardIds");
 
             //confirm the ip of this returned storage provider matches the one we registered with.
             string memory expectedIP = "127.0.0.1";
@@ -95,7 +96,7 @@ contract ClientManagerTest /*is ClientManager*/{
        
 
         //Below is just the 494 tests commented out, Ben didn't have time to fix all their bugs while he set up the testAssignStorageProvider tests to fix the storageProvider code 
-        |
+        
         // // Get the initial storage provider count
         // uint initialProviderCount = clientManager.getFarmerCount();
 
