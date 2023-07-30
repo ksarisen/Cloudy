@@ -61,7 +61,7 @@ def upload_shards():
     global available_storage_bytes, wallet_address
     # Check if the 'shards' key exists in the request
     if len(request.files) < 1:
-        return 'No shards found in the request. Try POSTING again with your desired shard files sent under the key "shards".'
+        return 'No shards found in the request. Try POSTING again with your desired shard files sent under the key "request.files".'
     
     #Confirm adding this shard will not exceed storage space
     total_bytes_uploading = 0
@@ -91,7 +91,7 @@ def upload_shards():
                 return jsonify({'error': response_str}), 400
             response = cloudySmartContract.functions.assignShardToStorageProvider(shardId, wallet_address).call()
             print(f"Successfully assigned shard {shardId} to storage provider {wallet_address}")
-            print(response)
+            print(F"blockchain's response to assigning shard to storage provider:", response)
             #TODO: check if storageProvider is now full. if so, take it off the blockchain list of availableProviders
             get_storage_providers()  # for debugging
             
@@ -110,30 +110,35 @@ def upload_shards():
         return jsonify({'error': error_message}), 507 #507 means Insufficient Storage
 
 
-@app.route('/download/<shardname>', methods=['GET'])
-def download_shard(shardname):
-    file_path = os.path.join(os.getenv('LOCAL_STORAGE_PATH'), shardname)
-
+@app.route('/download/<shardId>', methods=['GET'])
+def download_shard(shardId):
+    file_path = getShardPathFromShardID(shardId)
+    if file_path is None:
+        return 'Shard with the specified ID does not exist.', 404
+    
     if os.path.exists(file_path):
         return send_file(file_path, as_attachment=True)
     else:
-        response = make_response(f"File '{shardname}' does not exist.")
+        response = make_response(f"File '{file_path}' does not exist.")
         response.status_code = 404
         return response
 #TODO declare your storage provider info to blockchain
 #TODO: making sure file size limit is respected. Auditor method checking who is requesting the file. Updating the blockchain contract with which shards are being stored.
 #TODO: have a function the auditor can hit, which this service responds whether it has the requested file, via merkle tree ideally.
-@app.route('/delete/<shardname>', methods=['DELETE'])
-def delete_shard(shardname):
-    file_path = os.path.join(os.getenv('LOCAL_STORAGE_PATH'), shardname)
+
+@app.route('/delete/<shardId>', methods=['DELETE'])
+def delete_shard(shardId):
+    file_path = getShardPathFromShardID(shardId)
+    if file_path is None:
+        return 'Shard with the specified ID does not exist.', 404
     if os.path.exists(file_path):
         os.remove(file_path)
-        response = make_response(f"Shard '{shardname}' has been deleted.")
+        response = make_response(f"Shard '{file_path}' has been deleted.")
         response.status_code = 204
          #TODO: check if storageProvider is now no longer full. if so, add it to the blockchain list of availableProviders
         return response
     else:
-        abort(404, f"Shard '{shardname}' does not exist.")
+        abort(404, f"Shard '{file_path}' does not exist.")
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -238,6 +243,22 @@ def getShardIdfromShardName(filename):
     # If the filename is not valid or no match is found, return the default value of 0
     return -1
 
+def getShardPathFromShardID(shardId):
+    #Returns filepath to shard if it exists, or None.
+    #TODO: may need to pass in filename as well if shardIDs arent always unique.
+    storage_path = os.getenv('LOCAL_STORAGE_PATH')
+    shard_prefix = f"shard_{shardId}_of_file_"
+    shard_files = [f for f in os.listdir(storage_path) if f.startswith(shard_prefix)]
+
+    if not shard_files:
+        # Shard file not present, so return None.
+        return None  
+
+    # Assuming only one file exists with the given shardId
+    shard_filename = shard_files[0]
+    filepath = os.path.join(storage_path, shard_filename)
+
+    return filepath
 
 def get_directory_usage(directory):
     stat = os.statvfs(directory)
@@ -285,6 +306,7 @@ def audit_files():
     storage_path = os.getenv('LOCAL_STORAGE_PATH')
 
     # Check if all shards exist in the storage directory
+    #TODO: update this to use shardName instead of shardID
     for shardID in shardIDs:
         #TODO ensure this path is actually valid
         file_path = os.path.join(storage_path, shardID)
@@ -298,5 +320,5 @@ if __name__ == '__main__':
     # import threading
     # event_listener_thread = threading.Thread(target=start_ShardDeleted_event_listener)
     # event_listener_thread.start()
-    app.run(host='0.0.0.0', port=5002, debug=False)
+    app.run(host='0.0.0.0', port=5002, debug=False) #debug=True to auto reload when making changes
 
