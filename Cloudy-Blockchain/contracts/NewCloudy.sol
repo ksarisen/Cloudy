@@ -542,5 +542,30 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
 
         return fileNames;
     }
+
+    function getFileDetailsByOwner(address _owner) external view returns (FileDetails[] memory) {
+        bytes32[] memory fileHashes = ownerFiles[_owner];
+        FileDetails[] memory allFileDetails = new FileDetails[](fileHashes.length);
+
+        for (uint256 i = 0; i < fileHashes.length; i++) {
+            File storage file = filesByHash[fileHashes[i]];
+            allFileDetails[i] = FileDetails({
+                ownerName: file.ownerName,
+                fileName: file.fileName,
+                fileHash: file.fileHash,
+                shardIds: file.shardIds
+            });
+        }
+
+        return allFileDetails;
+    }
+
+    // Define a custom struct to hold the File details for the view function
+    struct FileDetails {
+        string ownerName;
+        string fileName;
+        bytes32 fileHash;
+        uint256[] shardIds;
+    }
 }
 
