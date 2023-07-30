@@ -6,6 +6,7 @@ from flask import Flask, abort, make_response, request, render_template, send_fi
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from web3 import Web3
+import base64
 from flask_cors import CORS
 
 #load the local variables from .env file
@@ -117,7 +118,24 @@ def download_shard(shardId):
         return 'Shard with the specified ID does not exist.', 404
     
     if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
+        filename = os.path.basename(file_path)
+        # Read the file contents
+        with open(file_path, 'rb') as file:
+            file_contents = file.read()
+
+        # Convert the binary data to a base64-encoded string
+        file_contents_base64 = base64.b64encode(file_contents).decode('utf-8')
+
+        # Create a response data object with the filename and file contents
+        response_data = {
+            'filename': filename,
+            'file_type': get_filetype_from_filename(filename),
+            'file_contents': file_contents_base64
+        }
+    
+        # response = send_file(file_path, as_attachment=True) #, add_etags=False
+        
+        return jsonify(response_data), 200
     else:
         response = make_response(f"File '{file_path}' does not exist.")
         response.status_code = 404
@@ -226,6 +244,18 @@ def is_valid_filename(filename):
     # Define the regular expression pattern to match the filename format
     pattern = r'^shard_\d+_of_file_.+$'
     return re.match(pattern, filename)
+
+def get_filetype_from_filename(filename):
+    # Use the is_valid_filename function to check if the filename is in the valid format
+    pattern = r'^shard_\d+_of_file_(.+)$'
+    match = re.match(pattern, filename)
+    if match:
+        # If the filename is in the valid format, extract the file type (extension)
+        file_type = match.group(1).split('.')[-1]
+        return file_type
+    else:
+        # If the filename is not in the valid format, return the default file type 'blob'
+        return 'blob'
 
 def getShardIdfromShardName(filename):
     if is_valid_filename(filename):

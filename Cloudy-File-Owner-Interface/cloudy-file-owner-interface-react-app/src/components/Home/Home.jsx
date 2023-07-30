@@ -232,8 +232,10 @@ export const Home = (props) => {
                 }
                 const shardID = i;
                 // const shardID = generateShardId(shards[i]); //To be used once we confirm hashing shards works. for now shards will be globally unique ints from the blockchain's shardCounter
-            const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
-            
+                
+                //TODO Jen: get the storageProvider holding this shard (get it from the blockchain) then uncomment the line below
+                //const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
+                const endpoint = `http://127.0.0.1:5002/upload`;
 
             // call upload file first and will return a series of new shard IDs.
             //TODO: estimate the gas as we did above instead of using gas: 5000000
@@ -337,13 +339,106 @@ export const Home = (props) => {
         return bytes32;
     }
 
+    async function downloadShard(shardId) {
+        //TODO Jen: get the storageProvider holding this shard (get it from the blockchain) then uncomment the line below
+        //const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
+        const endpoint = `http://127.0.0.1:5002/download/${shardId}`;
 
-    return (
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            mode: 'cors'
+        }).catch(error => {
+            console.error('Error fetching the shard:', error);
+            // Handle the error in your app
+        });
+
+        //for debugging
+        const headers = response.headers;
+        headers.forEach((value, name) => {
+            console.log(`${name}: ${value}`);
+        });
+          
+        if (!response.ok) {
+            console.error('Network response was not ok.');
+            // Handle the error in your app
+        } else {
+            // const filename = response.headers.get('filename'); // Get the filename from the "filename" field
+            // const blob = await response.blob();
+            // // Assuming 'download' is a function that triggers the download of the blob
+            // download(blob, filename);
+
+            const responseData = await response.json(); // Parse the JSON response data
+            const filename = responseData.filename; // Get the filename from the JSON response
+            const filetype = responseData.file_type; // Get the filename from the JSON response
+            const blob = new Blob([base64ToArrayBuffer(responseData.file_contents)], { type: filetype }); // Convert base64 string to Blob
+            // Assuming 'download' is a function that triggers the download of the blob
+            download(blob, filename);
+        }
+
+        
+
+
+        // const response = await fetch(endpoint, {
+        //     method: 'GET',
+        //     mode: 'cors'
+        // }).then(response => {
+        //     if (!response.ok) {
+        //       throw new Error('Network response was not ok.');
+        //     }
+        //     return response.blob();
+        // })
+        // .then(blob => {
+        //     const filename = getFilenameFromResponse(response);
+        //     // Assuming 'download' is a function that triggers the download of the blob
+        //     download(blob, filename);
+        // })
+    }
+    
+    // Helper function to convert base64 string to ArrayBuffer
+    const base64ToArrayBuffer = (base64) => {
+        const binaryString = window.atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function download(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+      
+        // Trigger the download by simulating a click on the link
+        document.body.appendChild(link);
+        link.click();
+      
+        // Clean up the URL and link
+        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      }
+
+    function getFilenameFromResponse(response) {
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matches = filenameRegex.exec(contentDisposition);
+          if (matches != null && matches[1]) {
+            return matches[1].replace(/['"]/g, '');
+          }
+        }
+        return 'download';
+      }
+
+
+        return (
         // body
         <div>
             {/* top bar */}
             <Navbar />
             <div>
+            <button onClick={() => downloadShard(12)}>Download Shard 12 TEST BUTTON</button>
                 <div className="upload-form">
                     <div className="flex-container">
                         <div className="flex-child">
