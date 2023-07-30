@@ -550,6 +550,7 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
         for (uint256 i = 0; i < fileHashes.length; i++) {
             File storage file = filesByHash[fileHashes[i]];
             allFileDetails[i] = FileDetails({
+                owner: file.owner,
                 ownerName: file.ownerName,
                 fileName: file.fileName,
                 fileHash: file.fileHash,
@@ -562,6 +563,7 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
 
     // Define a custom struct to hold the File details for the view function
     struct FileDetails {
+        address owner;
         string ownerName;
         string fileName;
         bytes32 fileHash;
