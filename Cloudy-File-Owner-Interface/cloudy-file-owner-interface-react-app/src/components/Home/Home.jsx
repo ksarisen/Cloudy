@@ -339,6 +339,26 @@ export const Home = (props) => {
         return bytes32;
     }
 
+    async function deleteShard(shardId) {
+        try {
+            //TODO Jen: get the storageProvider holding this shard (get it from the blockchain) then uncomment the line below
+            //const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/delete/${shardId}`;
+            const endpoint = `http://127.0.0.1:5002/delete/${shardId}`;
+            const response = await fetch(endpoint, {
+                method: 'DELETE',
+                mode: 'cors'
+            });
+      
+            if (response.ok) {
+                console.log(`Shard with ID ${shardId} successfully deleted.`);
+            } else {
+                console.error('Server Error while deleting shard:', response.statusText);
+            }
+        } catch (error) {
+          console.error('Error deleting the shard:', error);
+        }
+      }
+
     async function downloadShard(shardId) {
         //TODO Jen: get the storageProvider holding this shard (get it from the blockchain) then uncomment the line below
         //const endpoint = `${storageProviders[storageProviderIndex]/*.ip*/}:5002/upload`;
@@ -393,7 +413,7 @@ export const Home = (props) => {
         //     download(blob, filename);
         // })
     }
-    
+
     // Helper function to convert base64 string to ArrayBuffer
     const base64ToArrayBuffer = (base64) => {
         const binaryString = window.atob(base64);
@@ -438,7 +458,12 @@ export const Home = (props) => {
             {/* top bar */}
             <Navbar />
             <div>
+                <h4>Ben's test zone </h4>
             <button onClick={() => downloadShard(12)}>Download Shard 12 TEST BUTTON</button>
+            <br/>
+            <button onClick={() => deleteShard(12)}>Delete Shard 12 TEST BUTTON</button>
+            To test the above methods, you need to manually add a file name shard_12_of_file_clouds.png to your Storage Location directory.
+            TODO: render the buttons for newly uploaded files based on their shard Id.
                 <div className="upload-form">
                     <div className="flex-container">
                         <div className="flex-child">
