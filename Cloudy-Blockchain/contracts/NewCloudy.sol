@@ -119,7 +119,7 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
     for (uint256 i = 0; i < numShards; i++) {
         // Use shardCounter as the unique shard ID
         uint256 shardId = shardCounter;
-        shards[shardId] = Shard(shardId, address(0), _fileHash, true);
+        shards[shardId] = Shard(shardId, payable(address(0)), _fileHash, true);
         shardIds[i] = shardId;
         shardCounter++;
     }
@@ -127,7 +127,9 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
     filesByHash[_fileHash] = File(msg.sender, _ownerName, _fileName, _fileHash, shardIds, true);
     ownerFiles[msg.sender].push(_fileHash);
     isFileBeingStored[_fileHash] = true;
+
     emit FileUploaded(msg.sender, _fileHash);
+
     // Return the array of shardIds so the frontend has access to the gloablly unique shardIds assigned to its shards
     return shardIds;
 }
@@ -151,10 +153,8 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
                 break;
             }
         }
-
         // Delete the file from the filesByHash mapping
         delete filesByHash[_fileHash];
-
     }
 
     // Function assigns a storage provider to a new shard, or reassigns existing shard to new storage provider
@@ -370,8 +370,6 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
 
         //TODO: pop/remove the shard from storageProviderDetails.storedShardIds
         //TODO: ensure if this is a storage provider's last shard, we remove them from the list of storage providers currently storing shards.
-        
-        
 
         emit ShardDeleted(_shardId);
     }
