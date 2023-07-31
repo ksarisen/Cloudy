@@ -108,10 +108,20 @@ contract DistributedStorage {
 
 
 function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256 _shardCount) external returns (uint256[] memory) {
-    require(!doesFileExist(_fileHash), "File already exists");
-    require(bytes(_ownerName).length > 0, "Owner name must be provided");
-    require(bytes(_fileName).length > 0, "File name must be provided");
-    require(_shardCount > 0, "Shard count must be greater than zero");
+    //require(!doesFileExist(_fileHash), "File already exists");
+    if (doesFileExist(_fileHash)) {
+        revert("File already exists");
+    }
+    if (bytes(_ownerName).length == 0) {
+        revert("Owner name must be provided");
+    }
+    if (bytes(_fileName).length == 0) {
+        revert("File name must be provided");
+    }
+    if (_shardCount == 0) {
+        revert("Shard count must be greater than zero");
+    }
+
 
     uint256 numShards = _shardCount;
     uint256[] memory shardIds = new uint256[](numShards);
@@ -119,7 +129,7 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
     for (uint256 i = 0; i < numShards; i++) {
         // Use shardCounter as the unique shard ID
         uint256 shardId = shardCounter;
-        shards[shardId] = Shard(shardId, address(0), _fileHash, true);
+        shards[shardId] = Shard(shardId, payable(address(0)), _fileHash, true);
         shardIds[i] = shardId;
         shardCounter++;
     }
@@ -164,6 +174,10 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
         require(providerDetails[_storageProvider].walletAddress != address(0), "Storage provider does not exist");
 
         address currentProviderAddress = shards[_shardId].storageProvider;
+        if (providerDetails[_storageProvider].storedShardIds.length == 0) {
+            //if this is their first shard, add to list of providers actively storing shards
+            providersStoring.push(_storageProvider);
+        }
         if (currentProviderAddress != _storageProvider && currentProviderAddress != address(0)) {
             //this shard is being reassigned from a different provider.
             // Remove the shard from the current provider's list
@@ -186,10 +200,6 @@ function uploadFile(string memory _ownerName, string memory _fileName, bytes32 _
         }
         else{
             //this is a new shard
-            if (providerDetails[_storageProvider].storedShardIds.length == 0) {
-                //if this is their first shard, add to list of providers actively storing shards
-                providersStoring.push(_storageProvider);
-            }
             providerDetails[_storageProvider].storedShardIds.push(_shardId);
             shards[_shardId].storageProvider = _storageProvider;
         }

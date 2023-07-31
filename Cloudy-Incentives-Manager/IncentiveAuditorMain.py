@@ -58,7 +58,7 @@ def audit_storage_providers_loop():
             # Before getting storage provider data
             print("Fetching storage provider data...")
             storageProvidersToAudit = cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call()
-            print("Storage providers to audit:", storageProvidersToAudit)
+            print("Storage provider data from blockchain:", storageProvidersToAudit)
 
             if len(storageProvidersToAudit) > 0:
                 # get all shardIDs
