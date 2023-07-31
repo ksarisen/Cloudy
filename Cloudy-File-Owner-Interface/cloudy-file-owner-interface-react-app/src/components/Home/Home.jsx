@@ -25,10 +25,11 @@ export const Home = (props) => {
 
     //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0xaC85AE6B131e424a4275e57BBaC38097052ECb80"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0x15dE6d3dccFC7052B1AAABe8D96Aa7c26deC9957"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
 
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
+    web3.eth.handleRevert = true;
 
     const cloudyContract = new web3.eth.Contract(contractAbi, deployed_contract_address);
 
@@ -47,8 +48,9 @@ export const Home = (props) => {
     function handleFile(event) {
         if (typeof (event.target.files[0]) !== 'undefined' && event.target.files[0] != null) {
             setFile(event.target.files[0]);
-            console.log(event.target.files[0]);
-            console.log({ file });
+            //for debugging file upload:
+            // console.log(event.target.files[0]);
+            // console.log({ file });
         } else {
             setFile(null);
             console.log("File Not Chosen");
@@ -168,8 +170,6 @@ export const Home = (props) => {
             // Get the first account from Ganache
             const accounts = await web3.eth.getAccounts();
             const sender = accounts[0];
-
-            console.log("uploadFile function: checkpoint 1"); 
             // Get all storage Providers
             //TODO: update to use uploadFile(string memory _ownerName, string memory _fileName, bytes32 _fileHash, uint256[] memory _shardIds)
             var gasEstimateForUpload = 50000
@@ -239,14 +239,31 @@ export const Home = (props) => {
 
             // call upload file first and will return a series of new shard IDs.
             //TODO: estimate the gas as we did above instead of using gas: 5000000
-            const formData = new FormData();
-            const response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, 1).send({ from: sender, gas: 5000000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
-            console.log("response to uploadFile():", response);
+            let response;
+            try {
+                //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
+                response = await cloudyContract.methods.uploadFile("ouldooz", file.name, _filehash, 1).send({ from: sender, gas: 5000000 });
+                // Handle the response here if needed
+              } catch (error) {
+                // Handle the error gracefully
+                // Check if error.data exists and has a specific error message
+                if (error.data && error.data.includes('Revert')) {
+                    // Use the contract's decodeErrorReason function to get the specific error message
+                    const errorMessage = await cloudyContract.methods.decodeErrorReason(error.data).call();
+                    console.error('Failed to add file to the blockchain. ', errorMessage);
+                } else {
+                    console.error('Failed to add file to the blockchain. NO DUPLICATE FILES ALLOWED');//apparently web3 doesn't let us log errors from solidity's require messages.
+                }
+                return;
+                
+              } 
+            console.log("Response from blockchain after calling uploadFile():", response);
 
             //TODO: handle case where file has previously been uploaded and is a duplicate.
             const shardIdResponse = await cloudyContract.methods.getFilesShards(_filehash).call({ from: sender, gas: 5000000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
-            var shardName
-            if (shardIdResponse?.shardIDs) {
+            var shardName;
+            const formData = new FormData();
+            if (shardIdResponse.length > 0) {
                 shards.forEach((shard, index) => {
                     shardName = `shard_${shardIdResponse[index]}_of_file_${fileName}`;
                     formData.append(shardName, shard);
@@ -255,10 +272,9 @@ export const Home = (props) => {
                 });
             }
             else{
-               console.log("No shards returned!");
+               console.error("ERROR unable to connect to the Blockchain; No shardIds were returned!");
                console.log(shardIdResponse );
             }
-    
                 try {
                     const response = await fetch(endpoint, {
                         method: 'POST',
@@ -267,8 +283,6 @@ export const Home = (props) => {
                     });
     
                     if (response.ok) {
-                        console.log('Shards uploaded successfully');
-                        // shardsToProviders.set(shardID, storageProviders[storageProviderIndex]);
                         console.log(`Storing shards ${formData} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
                         successfulUpload = true;
                         shardIDs.push(shardName);
@@ -283,28 +297,6 @@ export const Home = (props) => {
                     console.error('Error uploading shard:', error);
                 }
             }
-
-    
-            // const response = await cloudyContract.methods._storeFile(_filehash).send({ from: sender,  gas: 500000 });
-        // console.log("response: " + response);
-
-        // Send a transaction to the blockchain
-        // Vague idea of how to work with Blockchain:
-        /* 
-            1. User uploads file
-            2. Split file into shards (array)
-            3. call getStorageProvidersWithSpace() 
-                // Assume we get returned IPs and available space per storage provider
-                // what happens if the storage provider has space but not enough to store the shard?
-                    // if there is no space for shards, let the blockchain know 
-            4. Loop through the providers and send them shards by calling the ip address + post
-                // const endpoint = `http://${farmerAddress}/upload`;
-            5. call the blockchains upload file function to send the shard data matching with the storage provider along with the filehash
-                // filehash
-                // ownername 
-                // shardIds (array) + storage providers
-
-        */
         const senderBalance = await web3.eth.getBalance(sender);
         console.log ("Current account balance is " + senderBalance);
     
@@ -458,12 +450,6 @@ export const Home = (props) => {
             {/* top bar */}
             <Navbar />
             <div>
-                <h4>Ben's test zone </h4>
-            <button onClick={() => downloadShard(12)}>Download Shard 12 TEST BUTTON</button>
-            <br/>
-            <button onClick={() => deleteShard(12)}>Delete Shard 12 TEST BUTTON</button>
-            To test the above methods, you need to manually add a file name shard_12_of_file_clouds.png to your Storage Location directory.
-            TODO: render the buttons for newly uploaded files based on their shard Id.
                 <div className="upload-form">
                     <div className="flex-container">
                         <div className="flex-child">
@@ -516,6 +502,16 @@ export const Home = (props) => {
                         </tbody>
                     </table>
                 </div>
+            <div className="ben-test">
+            <h4>Ben's test zone: </h4>
+            <button onClick={() => downloadShard(12)}>Download Shard 12 TEST BUTTON</button>
+            <br/>
+            <button onClick={() => deleteShard(12)}>Delete Shard 12 TEST BUTTON</button>
+            To test the above methods, you need to manually add a file name shard_12_of_file_clouds.png to your Storage Location directory.
+            TODO: render the buttons for newly uploaded files based on their shard Id.
+            <br/><br/>
+            Dont't forget to open the console to see helpful logs while debugging!
+            </div>
             </div>
 
         </div>

@@ -57,6 +57,7 @@ def set_blockchain_endpoint():
     # sys.exit(1)
 
     # Check if the storage provider already exists in the contract
+    print("Attempting to add storage provider to the blockchain...")
     if wallet_address in cloudySmartContract.functions.getStorageProviderDataOfProvidersCurrentlyStoringShards().call():
         print("Storage provider's walletAddress exists in the contract")
         return
@@ -78,16 +79,29 @@ def set_blockchain_endpoint():
         }
         # What happens when I restart this service?
         response = cloudySmartContract.functions.addStorageProvider(storage_provider_ip, wallet_address, uint256_storage).transact(transaction)
-        print(f"Transaction successful. Response: {response}")
+        print(f"Successfully added this storage provider to the blockchain.")
     except Exception as e:
         #Unable to add storageProvider, likely due to it already having been added previously.
-        print(f"Error: {e}")
+        print(f"Error adding this storage provider to the blockchain: {e}")
 
     # Use the response variable here or handle it as needed
     if response:
         print(response)
 
+def print_currently_stored_files():
+    if not os.path.exists(local_storage_path) or not os.path.isdir(local_storage_path):
+        print(f"Error: Storage Directory '{local_storage_path}' does not exist. unable to display currently stored files.")
+        return
 
+    print(f"Listing files currently stored in '{local_storage_path}':")
+    print(f"{'Name': <40} {'File Size (bytes)': >15}")
+    print("=" * 60)
+
+    for filename in os.listdir(local_storage_path):
+        file_path = os.path.join(local_storage_path, filename)
+        if os.path.isfile(file_path):
+            file_size = os.path.getsize(file_path)
+            print(f"{filename: <40} {file_size: >15}")
 
 
 
@@ -108,6 +122,7 @@ CORS(CloudyStorageFlaskServer.app, resources={r"/*": {"origins": "http://localho
 if __name__ == '__main__':
     # Run the other functions first
     set_blockchain_endpoint()
+    print_currently_stored_files()
 
     # Start the Flask server
     CloudyStorageFlaskServer.app.run(port=5002, debug=False)

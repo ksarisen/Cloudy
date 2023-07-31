@@ -61,7 +61,7 @@ def ensureContractDeployment():
 def upload_shards():
     global available_storage_bytes, wallet_address
     # Check if the 'shards' key exists in the request
-    if len(request.files) < 1:
+    if len(request.files) < 1 and request.data != b'':
         return 'No shards found in the request. Try POSTING again with your desired shard files sent under the key "request.files".'
     
     #Confirm adding this shard will not exceed storage space
