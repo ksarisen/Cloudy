@@ -24,7 +24,7 @@ export const Home = (props) => {
     const fileInputRef = useRef(null);
     //NOTE the next line is a BAD temporary hardcoded way to access locally hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
-    let deployed_contract_address = "0x15dE6d3dccFC7052B1AAABe8D96Aa7c26deC9957"// process.env.REMIX_CONTRACT_ADDRESS
+    let deployed_contract_address = "0x29C4f21a29048FA8a91D5dCa5d9a1f54fF9526dB"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
     web3.eth.handleRevert = true;
@@ -158,6 +158,10 @@ export const Home = (props) => {
 
 
     async function uploadFile(file) {
+        if(file == null || file.name == null){
+            console.log("NO FILE SELECTED FOR UPLOAD")
+            return;
+        }
         try {
             const fileName = file.name;
             // TODO: Please change the way we hash stringToBytes32  
@@ -232,7 +236,7 @@ export const Home = (props) => {
                 if (i == storageProvidersWithSpace.length) {
                     storageProviderIndex = i % storageProvidersWithSpace.length;
                 }
-                const shardID = i;
+                // const shardID = i;
                 // const shardID = generateShardId(shards[i]); //To be used once we confirm hashing shards works. for now shards will be globally unique ints from the blockchain's shardCounter
                 
                 //TODO Jen: get the storageProvider holding this shard (get it from the blockchain) then uncomment the line below
@@ -282,13 +286,11 @@ export const Home = (props) => {
                 shards.forEach((shard, index) => {
                     shardName = `shard_${shardIdResponse[index]}_of_file_${fileName}`;
                     formData.append(shardName, shard);
-                    console.log("formData of shard being sent:")
-                    console.log(formData)
                 });
             }
             else{
                console.error("ERROR unable to connect to the Blockchain; No shardIds were returned!");
-               console.log(shardIdResponse );
+               console.log(shardIdResponse);
             }
                 try {
                     const response = await fetch(endpoint, {
@@ -298,7 +300,7 @@ export const Home = (props) => {
                     });
     
                     if (response.ok) {
-                        console.log(`Storing shards ${formData} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
+                        console.log(`Storing shards ${shardIdResponse} with storage provider ${storageProvidersWithSpace[storageProviderIndex]}`);
                         successfulUpload = true;
                         shardIDs.push(shardName);
                     } else {
@@ -307,7 +309,7 @@ export const Home = (props) => {
     
                     // Log the response content
                     const data = await response.text();
-                    console.log('Response:', data);
+                    console.log('Response from Storage Provider:', data);
                 } catch (error) {
                     console.error('Error uploading shard:', error);
                 }
@@ -379,11 +381,11 @@ export const Home = (props) => {
             // Handle the error in your app
         });
 
-        //for debugging
-        const headers = response.headers;
-        headers.forEach((value, name) => {
-            console.log(`${name}: ${value}`);
-        });
+        // //for debugging
+        // const headers = response.headers;
+        // headers.forEach((value, name) => {
+        //     console.log(`${name}: ${value}`);
+        // });
           
         if (!response.ok) {
             console.error('Network response was not ok.');
@@ -477,6 +479,7 @@ export const Home = (props) => {
         setUploadedFiles(updatedFiles);
 
         console.log("Deleted " + file.fileName);
+        console.log("Response from cloudyContract.methods.deleteFile(file.fileHash):")
         console.log(response)
     }
 

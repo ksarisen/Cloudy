@@ -83,11 +83,6 @@ def set_blockchain_endpoint():
     except Exception as e:
         #Unable to add storageProvider, likely due to it already having been added previously.
         print(f"Error adding this storage provider to the blockchain: {e}")
-
-    # Use the response variable here or handle it as needed
-    if response:
-        print(response)
-
 def print_currently_stored_files():
     if not os.path.exists(local_storage_path) or not os.path.isdir(local_storage_path):
         print(f"Error: Storage Directory '{local_storage_path}' does not exist. unable to display currently stored files.")
