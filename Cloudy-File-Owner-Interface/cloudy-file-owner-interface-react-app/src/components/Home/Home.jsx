@@ -23,11 +23,10 @@ export const Home = (props) => {
     const [file, setFile] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
-    //NOTE the next line is a BAD temporary hardcoded way to access loclaly hosted blockchain.
+    //NOTE the next line is a BAD temporary hardcoded way to access locally hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
     let deployed_contract_address = "0x15dE6d3dccFC7052B1AAABe8D96Aa7c26deC9957"// process.env.REMIX_CONTRACT_ADDRESS
     //TODO: update the above lines to use .env variables rather than constants
-
     const web3 = new Web3(new Web3.providers.HttpProvider(ganacheEndpoint));
     web3.eth.handleRevert = true;
 
@@ -166,7 +165,7 @@ export const Home = (props) => {
             // Split file into shards
             // Do not split shards yet. Try to upload file as 1 shard / 1 file first and see if it works
             const shards = splitFile(file,1); // TODO: decide if we want to split files into more than 1 big shard
-        
+            
             // Get the first account from Ganache
             const accounts = await web3.eth.getAccounts();
             const sender = accounts[0];
@@ -252,15 +251,28 @@ export const Home = (props) => {
                     const errorMessage = await cloudyContract.methods.decodeErrorReason(error.data).call();
                     console.error('Failed to add file to the blockchain. ', errorMessage);
                 } else {
-                    console.error('Failed to add file to the blockchain. NO DUPLICATE FILES ALLOWED');//apparently web3 doesn't let us log errors from solidity's require messages.
+                    console.error(error);
+                    console.info('Failed to add file to the blockchain. NO DUPLICATE FILES ALLOWED');//apparently web3 doesn't let us log errors from solidity's require messages.
                 }
                 return;
                 
-              } 
+            } 
             console.log("Response from blockchain after calling uploadFile():", response);
+
+            const newFile = {
+                fileHash: _filehash, 
+                fileName: fileName, 
+                shardIds: [],
+                fileUploadDate: Date.now()
+            };
 
             //TODO: handle case where file has previously been uploaded and is a duplicate.
             const shardIdResponse = await cloudyContract.methods.getFilesShards(_filehash).call({ from: sender, gas: 5000000 }); //for the demo,  all files are owned by the single user "Ouldooz" since user management can be added later
+            
+            //update the UI with the newly updated file's data.
+            newFile.shardIds = shardIdResponse;
+            setUploadedFiles([...uploadedFiles, newFile]);
+            
             var shardName;
             const formData = new FormData();
             if (shardIdResponse.length > 0) {
@@ -441,7 +453,29 @@ export const Home = (props) => {
           }
         }
         return 'download';
-      }
+    }
+    function handleFileDownload(file) {
+        file.shardIds.forEach((shardId) => {
+          downloadShard(shardId);
+        });
+        //TODO: when we expect multiple shards per file, update this to combine all the shard blobs together.
+    }
+    async function handleFileDelete(file) {
+        file.shardIds.forEach((shardId) => {
+          deleteShard(shardId);
+        });
+        const accounts = await web3.eth.getAccounts();
+        const sender = accounts[0]
+        //todo: improve gas estimate
+        const response = await cloudyContract.methods.deleteFile(file.fileHash).send({ from: sender,  gas: 5000000 });
+            
+        // Remove the file from uploadedFiles after deleting its shards
+        const updatedFiles = uploadedFiles.filter((f) => f.fileHash !== file.fileHash);
+        setUploadedFiles(updatedFiles);
+
+        console.log("Deleted " + file.fileName);
+        console.log(response)
+    }
 
 
         return (
@@ -486,14 +520,12 @@ export const Home = (props) => {
                                     <td className="filename">{file.fileName}</td>
                                     {/* <td>{file.fileUploadDate}</td> */}
                                     <td>
-                                        <a className='download-button'>
-                                            {/* <a className='download-button' onClick={() => handleDownload(file.fileHash, encryptionKey)}> */}
+                                        <a className='download-button' onClick={() => handleFileDownload(file /*, encryptionKey*/)}>
                                             Download
                                         </a>
                                     </td>
                                     <td>
-                                        <a className='delete-button'>
-                                            {/* <a className='delete-button' onClick={() => handleDelete(file.fileHash)}> */}
+                                        <a className='delete-button' onClick={() => handleFileDelete(file)}>
                                             Delete
                                         </a>
                                     </td>
@@ -502,7 +534,7 @@ export const Home = (props) => {
                         </tbody>
                     </table>
                 </div>
-            <div className="ben-test">
+            <div hidden className="ben-test">
             <h4>Ben's test zone: </h4>
             <button onClick={() => downloadShard(12)}>Download Shard 12 TEST BUTTON</button>
             <br/>
