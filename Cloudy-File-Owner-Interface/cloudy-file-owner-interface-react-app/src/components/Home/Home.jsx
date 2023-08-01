@@ -1,10 +1,9 @@
 // import dotenv from 'dotenv';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import './Home.css';
 import Navbar from '../Navbar/Navbar';
 import Web3 from 'web3';
 import contractAbi from '../../contractAbi.json';
-import CryptoJS from 'crypto-js';
 // import dotenv from 'dotenv';
 
 // import { config } from 'dotenv';
@@ -22,7 +21,7 @@ import CryptoJS from 'crypto-js';
 export const Home = (props) => {
     const [file, setFile] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState([]);
-
+    const fileInputRef = useRef(null);
     //NOTE the next line is a BAD temporary hardcoded way to access locally hosted blockchain.
     let ganacheEndpoint = "http://127.0.0.1:7545" //TODO: make dotenv import workprocess.env.GANACHE_ENDPOINT;
     let deployed_contract_address = "0x15dE6d3dccFC7052B1AAABe8D96Aa7c26deC9957"// process.env.REMIX_CONTRACT_ADDRESS
@@ -44,7 +43,9 @@ export const Home = (props) => {
         console.log(`Is Ganache hosting your contract? ${isHosting}`);
     }
 
+
     function handleFile(event) {
+        console.log("handleFile Enter");
         if (typeof (event.target.files[0]) !== 'undefined' && event.target.files[0] != null) {
             setFile(event.target.files[0]);
             //for debugging file upload:
@@ -83,6 +84,7 @@ export const Home = (props) => {
         event.preventDefault();
         checkHosting(); // confirm the blockchain is connected, for debugging only.
         uploadFile(file);
+        fileInputRef.current.value = '';
     }
 
     //     //TODO: Encrypt file using AES
@@ -495,7 +497,7 @@ export const Home = (props) => {
                             <form>
                                 <div className="upload-container">
                                     <label className="upload-labels">Try to Upload a File: &nbsp;</label>
-                                    <input className="file" type="file" name="file" onChange={handleFile} />
+                                    <input className="file" type="file" name="file" onChange={handleFile}  ref={fileInputRef}/>
                                 </div>
                                 <br />
                                 <button className="button" type="submit" onClick={handleUpload}>Upload</button>
