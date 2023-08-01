@@ -85,6 +85,7 @@ export const Home = (props) => {
         checkHosting(); // confirm the blockchain is connected, for debugging only.
         uploadFile(file);
         fileInputRef.current.value = '';
+        setFile(null);
     }
 
     //     //TODO: Encrypt file using AES
