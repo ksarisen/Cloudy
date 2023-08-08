@@ -83,7 +83,8 @@ def upload_shards():
             # Save the file to the specified path
             shard_name = secure_filename(shard.name)
             #use the raw path from .env file to prevent backslashes from being misinterpreted.
-            shard.save(r"{}/{}".format(os.getenv('LOCAL_STORAGE_PATH'), shard_name))
+            shard_path = os.path.join(os.getenv('LOCAL_STORAGE_PATH'), shard_name)
+            shard.save(shard_path)
             #update blockchain to track which storage provider is storing this shard
             #TODO: get id from shard/sent file blob.
             shardId = getShardIdfromShardName(shard_name)
@@ -150,6 +151,7 @@ def delete_shard(shardId):
     if file_path is None:
         return 'Shard with the specified ID does not exist.', 404
     if os.path.exists(file_path):
+        #TODO: confirm sender is the file owner.
         os.remove(file_path)
         response = make_response(f"Shard '{file_path}' has been deleted.")
         response.status_code = 204
